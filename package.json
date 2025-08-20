@@ -1,0 +1,47 @@
+{
+  "name": "ez-phase",
+  "version": "1.0.0",
+  "description": "EZ-PHASE: User-Friendly GUI Wrapper for PHASE 2.1.1 Haplotype Phasing",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder",
+    "build-mac": "electron-builder --mac",
+    "dist": "electron-builder --publish=never"
+  },
+  "keywords": ["ez-phase", "phase", "haplotype", "phasing", "bioinformatics", "gui"],
+  "author": "Your Name",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.0.0"
+  },
+  "dependencies": {
+    "child_process": "^1.0.2",
+    "fs-extra": "^11.0.0",
+    "path": "^0.12.7"
+  },
+  "build": {
+    "appId": "com.yourname.ez-phase",
+    "productName": "EZ-PHASE",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "**/*",
+      "!dist",
+      "!node_modules",
+      "!*.log"
+    ],
+    "mac": {
+      "category": "public.app-category.developer-tools",
+      "icon": "assets/icon.icns",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["x64", "arm64"]
+        }
+      ]
+    }
+  }
+}

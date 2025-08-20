@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EZ-PHASE - Easy Haplotype Phasing</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  			background: linear-gradient(135deg, var(--primary-gradient-start, #667eea) 0%, var(--primary-gradient-end, #764ba2) 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            font-size: 2.5em;
+            font-weight: 300;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #7f8c8d;
+            font-size: 1.1em;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .form-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 15px;
+            border: 1px solid #e9ecef;
+        }
+
+        .form-section h3 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.3em;
+            font-weight: 600;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #34495e;
+            font-weight: 500;
+            font-size: 0.95em;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+            margin-right: 10px;
+            transform: scale(1.2);
+        }
+
+        .file-section {
+            grid-column: 1 / -1;
+            background: linear-gradient(135deg, #74b9ff, #0984e3);
+            color: white;
+        }
+
+        .file-section h3 {
+            color: white;
+            border-bottom-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .file-picker {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px dashed rgba(255, 255, 255, 0.5);
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+        }
+
+        .file-picker:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.8);
+            transform: translateY(-2px);
+        }
+
+        .file-picker-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .file-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+            opacity: 0.8;
+        }
+
+        .selected-files {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+
+        .file-item {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .command-preview {
+            grid-column: 1 / -1;
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 25px;
+            border-radius: 15px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.9em;
+            line-height: 1.6;
+        }
+
+        .command-preview h3 {
+            color: #3498db;
+            margin-bottom: 15px;
+            font-family: inherit;
+        }
+
+        .command-text {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            word-break: break-all;
+            white-space: pre-wrap;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 30px;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            min-width: 120px;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+        }
+
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: #7f8c8d;
+            transform: translateY(-2px);
+        }
+
+        .tooltip {
+            position: relative;
+            display: inline-block;
+            cursor: help;
+            color: #3498db;
+            margin-left: 5px;
+        }
+
+        .tooltip:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #2c3e50;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.8em;
+            white-space: nowrap;
+            z-index: 1000;
+            opacity: 1;
+        }
+
+        .progress-section {
+            margin-top: 20px;
+            display: none;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #ecf0f1;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            width: 0%;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        .progress-text {
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 0.9em;
+        }
+
+        .output-section {
+            margin-top: 20px;
+            display: none;
+            background: #2c3e50;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .output-header {
+            background: #34495e;
+            padding: 15px 20px;
+            color: white;
+            font-weight: 600;
+            border-bottom: 1px solid #4a5a6b;
+        }
+
+        .output-content {
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 15px 20px;
+            background: #2c3e50;
+            color: #ecf0f1;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.85em;
+            line-height: 1.4;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-ready { background: #95a5a6; }
+        .status-running { background: #f39c12; animation: pulse 2s infinite; }
+        .status-success { background: #27ae60; }
+        .status-error { background: #e74c3c; }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .binary-status {
+            margin-left: 10px;
+            font-size: 0.8em;
+            color: #7f8c8d;
+        }
+
+        .binary-status.valid {
+            color: #27ae60;
+        }
+
+        .binary-status.invalid {
+            color: #e74c3c;
+        }
+
+        .inline {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .hint {
+            font-size: 0.8em;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .container {
+                margin: 10px;
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧬 EZ-PHASE</h1>
+            <p>Easy Haplotype Phasing - GUI for PHASE 2.1.1</p>
+        </div>
+
+        <form id="phaseForm">
+            <div class="form-grid">
+                <!-- File Selection Section -->
+                <div class="form-section file-section">
+                    <h3>📁 Input Files & PHASE Binary</h3>
+                    
+                    <!-- PHASE Binary Selection -->
+                    <div class="form-group" style="margin-bottom: 25px;">
+    					<label style="color: white;">
+       						<span class="status-indicator" id="binaryStatus"></span>
+        					PHASE Binary Location
+       				 		<span class="binary-status" id="binaryStatusText">Not selected</span>
+    					</label>
+   					 	<div style="display: flex; gap: 10px; margin-bottom: 10px;">
+        					<input type="text" id="phaseBinaryPath" placeholder="Select PHASE executable..." readonly 
+               					style="flex: 1; background: rgba(255,255,255,0.9); color: #2c3e50;">
+        					<button type="button" onclick="selectPhaseBinary()" 
+                					style="padding: 10px 20px; background: rgba(255,255,255,0.3); border: 1px solid rgba(255,255,255,0.5); border-radius: 8px; color: white; cursor: pointer;">
+            					Browse
+        					</button>
+  	 	 				</div>
+    					<div class="hint" style="color: rgba(255,255,255,0.8); font-size: 0.85em; margin-top: 8px;">
+        					💡 Download PHASE 2.1.1 from the <a href="http://stephenslab.uchicago.edu/phase/download.html" target="_blank" style="color: rgba(255,255,255,0.9);">Stephens Lab website</a>
+    					</div>
+					</div>
+                    
+                    <!-- Directory Selection -->
+                    <div class="file-picker" onclick="selectDirectory()">
+                        <div class="file-picker-content">
+                            <div class="file-icon">📂</div>
+                            <div>
+                                <strong>Select Directory</strong>
+                                <br>Choose folder containing .inp files
+                            </div>
+                        </div>
+                    </div>
+                    <input type="file" id="directoryInput" webkitdirectory multiple style="display: none;">
+                    
+                    <div id="selectedFiles" class="selected-files" style="display: none;">
+                        <h4>Selected .inp Files:</h4>
+                        <div id="fileList"></div>
+                    </div>
+                </div>
+
+                <!-- Basic Parameters -->
+                <div class="form-section">
+                    <h3>⚙️ Basic Parameters</h3>
+                    
+                    <div class="form-group">
+                        <label for="randomSeed">Random Seed <span class="tooltip" data-tooltip="Seed for random number generation (-S option)">ℹ️</span></label>
+                        <input type="number" id="randomSeed" name="randomSeed" min="1" max="999999" placeholder="Leave empty for random">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="iterations">Iterations (-X) <span class="tooltip" data-tooltip="Number of iterations for main chain">ℹ️</span></label>
+                        <input type="number" id="iterations" name="iterations" value="100" min="10" max="10000">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="burnin">Burn-in (-B) <span class="tooltip" data-tooltip="Number of burn-in iterations">ℹ️</span></label>
+                        <input type="number" id="burnin" name="burnin" value="100" min="10" max="5000">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="thinning">Thinning (-T) <span class="tooltip" data-tooltip="Thinning interval">ℹ️</span></label>
+                        <input type="number" id="thinning" name="thinning" value="1" min="1" max="100">
+                    </div>
+                </div>
+
+                <!-- Advanced Parameters -->
+                <div class="form-section" id="advanced">
+                    <h3>🔬 Advanced Parameters</h3>
+
+                    <!-- Recombination model (-MR*) -->
+                    <div class="form-group">
+                        <label for="recombModel">
+                            Recombination Model (-MR*)
+                            <span class="tooltip" data-tooltip="Choose how recombination varies across the region.">ℹ️</span>
+                        </label>
+                        <select id="recombModel" name="recombModel">
+                            <option value="MR0" selected>General variation (-MR0, default)</option>
+                            <option value="MR1">Hotspot, unknown position (-MR1 1)</option>
+                            <option value="MR2">Hotspot(s), specified positions (-MR2 …)</option>
+                            <option value="MR3">Constant rate, estimated (-MR3)</option>
+                            <option value="MR4">Constant rate, fixed (-MR4 + -R)</option>
+                        </select>
+                        <div class="hint">
+                            MR0: Li–Stephens; MR1: estimates one hotspot; MR2: one or two user-specified hotspot intervals; MR3: constant (estimated);
+                            MR4: constant (fixed, requires <code>-R</code>).
+                        </div>
+                    </div>
+
+                    <!-- MR1 (unknown hotspot) -->
+                    <div id="mr1Wrap" class="form-group" style="display:none;">
+                        <div class="hint">PHASE v2.1 allows <strong>n=1</strong> hotspot with unknown position. The UI will pass <code>-MR1 1</code>.</div>
+                    </div>
+
+                    <!-- MR2 (specified hotspot intervals) -->
+                    <div id="mr2Wrap" class="form-group" style="display:none;">
+                        <label>
+                            Hotspot intervals for -MR2
+                            <span class="tooltip" data-tooltip="Provide 1 or 2 [left,right] intervals in alignment coordinates.">ℹ️</span>
+                        </label>
+                        <div class="inline" style="gap:8px;align-items:center;">
+                            <select id="mr2Count" aria-label="Number of hotspots">
+                                <option value="1" selected>1 hotspot</option>
+                                <option value="2">2 hotspots</option>
+                            </select>
+                            <input id="mr2_a1" type="number" placeholder="a1 (left 1)" min="1">
+                            <input id="mr2_b1" type="number" placeholder="b1 (right 1)" min="1">
+                            <input id="mr2_a2" type="number" placeholder="a2 (left 2)" min="1" style="display:none;">
+                            <input id="mr2_b2" type="number" placeholder="b2 (right 2)" min="1" style="display:none;">
+                        </div>
+                        <div class="hint">Example: <code>-MR2 1 4200 5400</code> or <code>-MR2 2 a1 b1 a2 b2</code>.</div>
+                    </div>
+
+                    <!-- MR4 requires -R -->
+                    <div id="mr4Wrap" class="form-group" style="display:none;">
+                        <label for="Rvalue">
+                            Fixed recombination rate (-R) for -MR4
+                            <span class="tooltip" data-tooltip="Constant rate value used when you choose -MR4. Check manual for units.">ℹ️</span>
+                        </label>
+                        <input id="Rvalue" type="number" step="any" min="0" placeholder="e.g., 0.001">
+                    </div>
+
+                    <!-- -N: cap individuals for recomb estimation -->
+                    <div class="form-group">
+                        <label for="Ncap">
+                            Individuals for recombination estimation (-N)
+                            <span class="tooltip" data-tooltip="PHASE uses 100 by default when estimating recombination. Set to override.">ℹ️</span>
+                        </label>
+                        <input id="Ncap" type="number" min="1" placeholder="(optional)">
+                    </div>
+
+                    <!-- Mutation model (-d) -->
+                    <div class="form-group">
+                        <label for="dmodel">
+                            Multi-allelic mutation model (-d)
+                            <span class="tooltip" data-tooltip="-d1 = PIM; blank = stepwise (default). Or provide a δ-file path.">ℹ️</span>
+                        </label>
+                        <select id="dmodel" name="dmodel">
+                            <option value="">Stepwise (default)</option>
+                            <option value="1">Parent-Independent (PIM) — adds -d1</option>
+                            <option value="file">From δ-file — adds -d&lt;file&gt;</option>
+                        </select>
+                        <div id="deltaFileWrap" class="inline" style="display:none;margin-top:6px;">
+                            <input id="deltaFile" type="text" placeholder="Path to δ-file (e.g., /path/to/delta.txt)">
+                        </div>
+                    </div>
+
+                    <!-- Call thresholds -->
+                    <div class="form-group">
+                        <label>
+                            Call Thresholds (-p, -q)
+                            <span class="tooltip" data-tooltip="Posterior probability cutoffs for phase/genotype calls.">ℹ️</span>
+                        </label>
+                        <div class="inline">
+                            <input id="pthresh" type="number" min="0" max="1" step="0.05" value="0.9" aria-label="Phase threshold (-p)">
+                            <input id="qthresh" type="number" min="0" max="1" step="0.05" value="0.9" aria-label="Genotype threshold (-q)">
+                        </div>
+                    </div>
+
+                    <!-- App-level concurrency -->
+                    <div class="form-group">
+                        <label for="parallel">
+                            Parallel Processing (app-level)
+                            <span class="tooltip" data-tooltip="How many PHASE processes the app spawns concurrently.">ℹ️</span>
+                        </label>
+                        <select id="parallel" name="parallel">
+                            <option value="1">Single Process</option>
+                            <option value="2">2 Processes</option>
+                            <option value="4" selected>4 Processes</option>
+                            <option value="8">8 Processes</option>
+                            <option value="auto">Auto-detect</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Output Settings -->
+                <div class="form-section">
+                    <h3>📊 Output Settings</h3>
+                    
+                    <div class="form-group">
+                        <label for="outputPrefix">Output Prefix</label>
+                        <input type="text" id="outputPrefix" name="outputPrefix" placeholder="phase_output" value="phase_output">
+                    </div>
+
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="verbose" name="verbose" checked>
+                        <label for="verbose">Verbose Output (-v)</label>
+                    </div>
+
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="saveAll" name="saveAll">
+                        <label for="saveAll">Save All Iterations (-F)</label>
+                    </div>
+                </div>
+
+                <!-- Command Preview -->
+                <div class="form-section command-preview">
+                    <h3>🔍 Command Preview</h3>
+                    <div class="command-text" id="commandPreview">
+                        Select input files and PHASE binary to see command preview...
+                    </div>
+                </div>
+            </div>
+
+            <div class="buttons">
+                <button type="button" class="btn btn-secondary" onclick="resetForm()">Reset</button>
+                <button type="button" class="btn btn-primary" id="runButton" onclick="runPhase()" disabled>
+                    <span id="runButtonText">Run PHASE</span>
+                </button>
+            </div>
+
+            <!-- Progress Section -->
+            <div class="progress-section" id="progressSection">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div class="progress-text" id="progressText">Initializing...</div>
+            </div>
+
+            <!-- Output Section -->
+            <div class="output-section" id="outputSection">
+                <div class="output-header">
+                    <span class="status-indicator status-running"></span>
+                    PHASE Execution Log
+                </div>
+                <div class="output-content" id="outputContent"></div>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        let selectedInpFiles = [];
+        let selectedDirectory = '';
+        let phaseBinaryPath = '';
+        let isRunning = false;
+
+        // UI State Management
+        function updateRunButton() {
+    		const runButton = document.getElementById('runButton');
+    		const hasFiles = selectedInpFiles.length > 0;
+    		const hasBinary = phaseBinaryPath !== '';
+    		const canRun = hasFiles && hasBinary && !isRunning;
+    
+    		runButton.disabled = !canRun;
+    
+    		if (isRunning) {
+        		document.getElementById('runButtonText').textContent = 'Running...';
+    		} else if (!hasBinary) {
+        		document.getElementById('runButtonText').textContent = 'Select PHASE Binary';
+    		} else if (!hasFiles) {
+        		document.getElementById('runButtonText').textContent = 'Select Files';
+    		} else {
+        		document.getElementById('runButtonText').textContent = 'Run PHASE';
+    		}
+		}
+
+        function updateBinaryStatus(path = '') {
+            const statusIndicator = document.getElementById('binaryStatus');
+            const statusText = document.getElementById('binaryStatusText');
+            
+            if (path) {
+                statusIndicator.className = 'status-indicator status-success';
+                statusText.textContent = 'Valid';
+                statusText.className = 'binary-status valid';
+            } else {
+                statusIndicator.className = 'status-indicator status-ready';
+                statusText.textContent = 'Not selected';
+                statusText.className = 'binary-status';
+            }
+        }
+
+        // PHASE binary selection
+        async function selectPhaseBinary() {
+    		if (window.electronAPI) {
+    			const result = await window.electronAPI.selectPhaseBinary();
+       			 if (result) {
+            		phaseBinaryPath = result;
+            		document.getElementById('phaseBinaryPath').value = result;
+            		updateBinaryStatus(result);
+            		updateCommandPreview();
+            		updateRunButton();
+        		}
+    		} else {
+        		alert('PHASE binary selection only works in the Electron app.');
+    		}
+		}
+
+        // Directory selection
+        async function selectDirectory() {
+            if (window.electronAPI) {
+                const result = await window.electronAPI.selectDirectory();
+                
+                if (result) {
+                    selectedDirectory = result.directory;
+                    selectedInpFiles = result.files;
+                    updateFileDisplay();
+                    updateCommandPreview();
+                    updateRunButton();
+                }
+            } else {
+                // Web browser fallback
+                document.getElementById('directoryInput').click();
+            }
+        }
+
+        // Web browser file selection (fallback)
+        document.getElementById('directoryInput').addEventListener('change', function(e) {
+            const files = Array.from(e.target.files);
+            selectedInpFiles = files.filter(file => file.name.toLowerCase().endsWith('.inp'));
+            
+            if (files.length > 0) {
+                selectedDirectory = files[0].webkitRelativePath.split('/')[0];
+            }
+
+            updateFileDisplay();
+            updateCommandPreview();
+            updateRunButton();
+        });
+
+        function updateFileDisplay() {
+            const fileList = document.getElementById('fileList');
+            const selectedFilesDiv = document.getElementById('selectedFiles');
+            
+            if (selectedInpFiles.length > 0) {
+                selectedFilesDiv.style.display = 'block';
+                const rows = selectedInpFiles.map(f => {
+                    const name = typeof f === 'string' ? f.split(/[\\/]/).pop() : (f.name || f.path || 'unknown.inp');
+                    const size = (typeof f === 'object' && typeof f.size === 'number')
+                        ? `${(f.size/1024).toFixed(1)} KB`
+                        : '';
+                    return `<div class="file-item"><span>📄 ${name}</span><span>${size}</span></div>`;
+                });
+                fileList.innerHTML = rows.join('');
+            } else {
+                selectedFilesDiv.style.display = 'none';
+                fileList.innerHTML = '<div style="color:#e74c3c;text-align:center;">No .inp files found in selected directory</div>';
+            }
+        }
+
+        // Advanced UI Logic
+        function initAdvancedUI() {
+            const model = document.getElementById('recombModel');
+            const mr1 = document.getElementById('mr1Wrap');
+            const mr2 = document.getElementById('mr2Wrap');
+            const mr4 = document.getElementById('mr4Wrap');
+            const mr2Count = document.getElementById('mr2Count');
+            const a2 = document.getElementById('mr2_a2');
+            const b2 = document.getElementById('mr2_b2');
+            const dmodel = document.getElementById('dmodel');
+            const deltaWrap = document.getElementById('deltaFileWrap');
+
+            const refresh = () => {
+                const val = model?.value;
+                if (mr1) mr1.style.display = (val === 'MR1') ? 'block' : 'none';
+                if (mr2) mr2.style.display = (val === 'MR2') ? 'block' : 'none';
+                if (mr4) mr4.style.display = (val === 'MR4') ? 'block' : 'none';
+                if (mr2Count && a2 && b2) {
+                    const two = mr2Count.value === '2';
+                    a2.style.display = b2.style.display = two ? 'inline-block' : 'none';
+                }
+                if (deltaWrap && dmodel) deltaWrap.style.display = (dmodel.value === 'file') ? 'block' : 'none';
+            };
+
+            model?.addEventListener('change', refresh);
+            mr2Count?.addEventListener('change', refresh);
+            dmodel?.addEventListener('change', refresh);
+            refresh();
+        }
+
+        // Build advanced PHASE arguments
+        function buildAdvancedPhaseArgs() {
+            const args = [];
+
+            // -MR*
+            const model = (document.getElementById('recombModel')?.value) || 'MR0';
+            if (model === 'MR0' || model === 'MR3') {
+                args.push(`-${model}`);
+            } else if (model === 'MR1') {
+                args.push('-MR1', '1'); // v2.1: n=1
+            } else if (model === 'MR2') {
+                const n = document.getElementById('mr2Count')?.value || '1';
+                const a1 = +document.getElementById('mr2_a1').value;
+                const b1 = +document.getElementById('mr2_b1').value;
+                if (!a1 || !b1) throw new Error('Please provide a1 and b1 for -MR2.');
+                const ints = [Math.min(a1,b1), Math.max(a1,b1)];
+                if (n === '2') {
+                    const a2 = +document.getElementById('mr2_a2').value;
+                    const b2 = +document.getElementById('mr2_b2').value;
+                    if (!a2 || !b2) throw new Error('Please provide a2 and b2 for -MR2 with 2 hotspots.');
+                    ints.push(Math.min(a2,b2), Math.max(a2,b2));
+                }
+                args.push('-MR2', n, ...ints.map(String));
+            } else if (model === 'MR4') {
+                const R = (document.getElementById('Rvalue')?.value || '').trim();
+                if (!R) throw new Error('Please provide a -R value for -MR4.');
+                args.push('-MR4', '-R', R);
+            }
+
+            // -N
+            const N = (document.getElementById('Ncap')?.value || '').trim();
+            if (N) args.push('-N', N);
+
+            // -d
+            const dmodel = document.getElementById('dmodel')?.value || '';
+            if (dmodel === '1') {
+                args.push('-d1');
+            } else if (dmodel === 'file') {
+                const dfile = (document.getElementById('deltaFile')?.value || '').trim();
+                if (!dfile) throw new Error('Please choose a δ-file for -d<file>.');
+                args.push(`-d${dfile}`);
+            }
+
+            // -p / -q (only if changed)
+            const p = (document.getElementById('pthresh')?.value || '0.9').trim();
+            const q = (document.getElementById('qthresh')?.value || '0.9').trim();
+            if (p && p !== '0.9') args.push(`-p${p}`);
+            if (q && q !== '0.9') args.push(`-q${q}`);
+
+            return args;
+        }
+
+        // Real-time command preview update
+        function updateCommandPreview() {
+            const preview = document.getElementById('commandPreview');
+            
+            if (!phaseBinaryPath) {
+                preview.textContent = 'Select PHASE binary to see command preview...';
+                return;
+            }
+            
+            if (selectedInpFiles.length === 0) {
+                preview.textContent = 'Select input files to see command preview...';
+                return;
+            }
+
+            try {
+                let command = phaseBinaryPath;
+                
+                // Add basic parameters
+                const iterations = document.getElementById('iterations').value;
+                if (iterations) command += ` -X${iterations}`;
+                
+                const burnin = document.getElementById('burnin').value;
+                if (burnin) command += ` -B${burnin}`;
+                
+                const thinning = document.getElementById('thinning').value;
+                if (thinning && thinning !== '1') command += ` -T${thinning}`;
+                
+                const randomSeed = document.getElementById('randomSeed').value;
+                if (randomSeed) command += ` -S${randomSeed}`;
+                
+                // Add advanced parameters
+                const advancedArgs = buildAdvancedPhaseArgs();
+                if (advancedArgs.length > 0) {
+                    command += ' ' + advancedArgs.join(' ');
+                }
+                
+                // Add output options
+                if (document.getElementById('verbose').checked) command += ' -v';
+                if (document.getElementById('saveAll').checked) command += ' -F';
+                
+                // Add output prefix
+                const outputPrefix = document.getElementById('outputPrefix').value || 'phase_output';
+                
+                // Show sample command
+                const sampleFile = selectedInpFiles[0];
+                const sampleName = typeof sampleFile === 'string' ? sampleFile.split(/[\\/]/).pop() : (sampleFile.name || sampleFile.path || 'input.inp');
+                command += ` "${sampleName}" "${outputPrefix}.out"`;
+                
+                const parallel = document.getElementById('parallel').value;
+                if (parallel !== '1' && selectedInpFiles.length > 1) {
+                    preview.innerHTML = `<strong>Will execute ${selectedInpFiles.length} files with ${parallel} parallel processes</strong>\n\nSample command:\n${command}`;
+                } else {
+                    preview.innerHTML = `<strong>Will execute ${selectedInpFiles.length} file(s) sequentially</strong>\n\nSample command:\n${command}`;
+                }
+            } catch (error) {
+                preview.innerHTML = `<strong style="color: #e74c3c;">Error in parameters:</strong>\n${error.message}`;
+            }
+        }
+
+        function resetForm() {
+            document.getElementById('phaseForm').reset();
+            selectedInpFiles = [];
+            selectedDirectory = '';
+            phaseBinaryPath = '';
+            document.getElementById('phaseBinaryPath').value = '';
+            document.getElementById('selectedFiles').style.display = 'none';
+            document.getElementById('iterations').value = '100';
+            document.getElementById('burnin').value = '100';
+            document.getElementById('thinning').value = '1';
+            document.getElementById('outputPrefix').value = 'phase_output';
+            document.getElementById('verbose').checked = true;
+            
+            // Reset UI states
+            updateBinaryStatus();
+            updateCommandPreview();
+            updateRunButton();
+            hideProgress();
+            hideOutput();
+        }
+
+        function showProgress() {
+            document.getElementById('progressSection').style.display = 'block';
+        }
+
+        function hideProgress() {
+            document.getElementById('progressSection').style.display = 'none';
+            document.getElementById('progressFill').style.width = '0%';
+        }
+
+        function updateProgress(percent, text) {
+            document.getElementById('progressFill').style.width = percent + '%';
+            document.getElementById('progressText').textContent = text;
+        }
+
+        function showOutput() {
+            document.getElementById('outputSection').style.display = 'block';
+        }
+
+        function hideOutput() {
+            document.getElementById('outputSection').style.display = 'none';
+            document.getElementById('outputContent').innerHTML = '';
+        }
+
+        function appendOutput(text, isError = false) {
+            const outputContent = document.getElementById('outputContent');
+            const div = document.createElement('div');
+            div.style.color = isError ? '#e74c3c' : '#ecf0f1';
+            div.textContent = text;
+            outputContent.appendChild(div);
+            outputContent.scrollTop = outputContent.scrollHeight;
+        }
+
+        async function runPhase() {
+            if (isRunning) return;
+            
+            if (selectedInpFiles.length === 0) {
+                alert('Please select a directory containing .inp files first.');
+                return;
+            }
+
+            if (!phaseBinaryPath) {
+                alert('Please select the PHASE binary executable first.');
+                return;
+            }
+
+            isRunning = true;
+            updateRunButton();
+            showProgress();
+            showOutput();
+            
+            // Clear previous output
+            document.getElementById('outputContent').innerHTML = '';
+            
+            try {
+                // Build advanced arguments
+                const advancedArgs = buildAdvancedPhaseArgs();
+                
+                // Prepare configuration
+                const config = {
+                    directory: selectedDirectory,
+                    files: selectedInpFiles,
+                    phaseBinaryPath: phaseBinaryPath,
+                    parallel: document.getElementById('parallel').value === 'auto' ? 4 : parseInt(document.getElementById('parallel').value),
+                    randomSeed: document.getElementById('randomSeed').value,
+                    iterations: document.getElementById('iterations').value,
+                    burnin: document.getElementById('burnin').value,
+                    thinning: document.getElementById('thinning').value,
+                    outputPrefix: document.getElementById('outputPrefix').value || 'phase_output',
+                    advancedArgs: advancedArgs,
+                    options: {
+                        verbose: document.getElementById('verbose').checked,
+                        saveAll: document.getElementById('saveAll').checked
+                    }
+                };
+
+                console.log('Running PHASE with config:', config);
+
+                if (window.electronAPI) {
+                    // Set up real-time listeners
+                    const cleanupOutput = window.electronAPI.onPhaseOutput((data) => {
+                        appendOutput(data.trim());
+                    });
+
+                    const cleanupError = window.electronAPI.onPhaseError((data) => {
+                        appendOutput(data.trim(), true);
+                    });
+
+                    const cleanupProgress = window.electronAPI.onPhaseProgress((data) => {
+                        const { progress, processedFiles, totalFiles } = data;
+                        updateProgress(progress, `Processing file ${processedFiles} of ${totalFiles}...`);
+                    });
+
+                    updateProgress(10, 'Starting PHASE execution...');
+                    
+                    const result = await window.electronAPI.runPhase(config);
+                    
+                    // Cleanup listeners
+                    cleanupOutput();
+                    cleanupError();
+                    cleanupProgress();
+                    
+                    updateProgress(100, 'Completed successfully!');
+                    
+                    setTimeout(() => {
+                        alert(`✅ EZ-PHASE analysis completed successfully!\n\n📁 Processed ${result.processedFiles} files\n📂 Output directory: ${result.outputDirectory}\n\nCheck the output directory for results and log files.`);
+                        hideProgress();
+                        isRunning = false;
+                        updateRunButton();
+                    }, 1000);
+                    
+                } else {
+                    // Web browser fallback - simulate progress
+                    let progress = 0;
+                    appendOutput('Demo mode: Simulating PHASE execution...');
+                    
+                    const progressInterval = setInterval(() => {
+                        progress += Math.random() * 15;
+                        if (progress > 100) progress = 100;
+                        
+                        updateProgress(progress, `Demo: Processing files... ${Math.round(progress)}%`);
+                        appendOutput(`Demo progress: ${Math.round(progress)}%`);
+                        
+                        if (progress >= 100) {
+                            clearInterval(progressInterval);
+                            setTimeout(() => {
+                                alert(`🎯 Demo completed!\n\nIn the full Electron app, this would execute:\n\n${selectedInpFiles.length} files with the configured parameters.\n\nGenerated commands are shown in the preview section.`);
+                                hideProgress();
+                                isRunning = false;
+                                updateRunButton();
+                            }, 500);
+                        }
+                    }, 300);
+                }
+            } catch (error) {
+                console.error('PHASE parameter error:', error);
+                appendOutput(`❌ Parameter error: ${error.message}`, true);
+                alert(`❌ Parameter Error:\n\n${error.message}\n\nPlease check your advanced parameter settings.`);
+                hideProgress();
+                isRunning = false;
+                updateRunButton();
+            }
+        }
+
+        // Initialize everything when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            initAdvancedUI();
+            updateCommandPreview();
+            updateRunButton();
+            updateBinaryStatus();
+            
+            // Set up real-time command preview updates
+            document.getElementById('phaseForm').addEventListener('input', updateCommandPreview);
+            document.getElementById('phaseForm').addEventListener('change', updateCommandPreview);
+        });
+
+        // Debug: Check if electronAPI is available
+        console.log('electronAPI available:', !!window.electronAPI);
+        console.log('electronAPI methods:', window.electronAPI ? Object.keys(window.electronAPI) : 'undefined');
+    </script>
+</body>
+</html>

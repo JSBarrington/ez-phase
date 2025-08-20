@@ -1,0 +1,307 @@
+# docs/EXAMPLES.md
+# EZ-PHASE Usage Examples
+
+## Example 1: Basic Single Population Analysis
+
+### Input Data
+- Population: *Arabidopsis thaliana* accessions
+- Loci: 5 microsatellite markers
+- Samples: 50 individuals
+
+### Steps
+1. **Prepare Input File** (`arabidopsis.inp`):
+```
+50
+5
+P 1 2 3 4 5
+MMMMM
+Ind001 142 144 156 158 203 205 167 169 134 136
+Ind002 142 142 158 160 203 207 165 167 132 134
+...
+```
+
+2. **Run EZ-PHASE**:
+   - Iterations: 1000
+   - Burn-in: 100
+   - Thinning: 1
+   - Recombination Model: MR0 (default)
+
+3. **Expected Output**:
+   - `arabidopsis_out` - Phased haplotypes
+   - Execution logs in `ez_phase_output/`
+
+---
+
+## Example 2: Multiple Populations with Hotspots
+
+### Scenario
+Analyzing human population data with known recombination hotspots.
+
+### Configuration
+- **Files**: `european.inp`, `asian.inp`, `african.inp`
+- **Recombination Model**: MR2 (specified hotspots)
+- **Hotspot Intervals**: 4200-5400, 8900-9200
+- **Parallel Processing**: 4 processes
+
+### Advanced Parameters
+```
+Iterations: 5000
+Burn-in: 500
+Thinning: 10
+Random Seed: 12345
+Recombination Model: MR2
+Hotspot Count: 2
+Interval 1: 4200 - 5400
+Interval 2: 8900 - 9200
+```
+
+---
+
+## Example 3: High-Throughput Analysis
+
+### Large Dataset Processing
+- **Files**: 100+ .inp files
+- **Strategy**: Batch processing with optimal parallelization
+
+### Recommended Settings
+```
+Parallel Processes: Auto-detect (8 cores = 8 processes)
+Iterations: 2000 (balance speed vs accuracy)
+Burn-in: 200
+Verbose Output: Enabled
+Save All Iterations: Disabled (save disk space)
+```
+
+---
+
+# docs/FAQ.md
+# Frequently Asked Questions
+
+## General Questions
+
+**Q: What is EZ-PHASE?**
+A: EZ-PHASE is a user-friendly GUI wrapper for the PHASE 2.1.1 command-line tool, making haplotype phasing accessible through a graphical interface.
+
+**Q: Do I need to know command-line to use EZ-PHASE?**
+A: No! EZ-PHASE provides a point-and-click interface. However, it shows you the exact commands being run for transparency and learning.
+
+**Q: Is EZ-PHASE free?**
+A: Yes, EZ-PHASE is open-source and free to use under the MIT license.
+
+## Installation & Setup
+
+**Q: Where do I get the PHASE binary?**
+A: Download PHASE 2.1.1 from the [Stephens Lab website](http://stephenslab.uchicago.edu/phase/download.html).
+
+**Q: EZ-PHASE can't find my PHASE binary. What should I do?**
+A: Try the auto-detect feature first. If that fails, use "Browse" to manually locate your PHASE executable. Make sure it's executable (`chmod +x PHASE` on macOS/Linux).
+
+**Q: Can I use EZ-PHASE with PHASE 3.x?**
+A: Currently, EZ-PHASE is designed for PHASE 2.1.1. PHASE 3.x support may be added in future versions.
+
+## Usage Questions
+
+**Q: What file formats does EZ-PHASE accept?**
+A: EZ-PHASE works with standard PHASE input files (.inp format) as specified in the PHASE 2.1.1 documentation.
+
+**Q: How many files can I process at once?**
+A: There's no hard limit, but performance depends on your system resources. EZ-PHASE supports parallel processing to handle multiple files efficiently.
+
+**Q: What's the difference between the recombination models?**
+A: 
+- **MR0**: General recombination variation (Li-Stephens model)
+- **MR1**: Single hotspot with unknown position
+- **MR2**: User-specified hotspot positions
+- **MR3**: Constant recombination rate (estimated)
+- **MR4**: Constant recombination rate (fixed value)
+
+## Troubleshooting
+
+**Q: EZ-PHASE crashes when I try to run PHASE. What's wrong?**
+A: Check that:
+1. PHASE binary is executable
+2. Input files are in correct format
+3. You have write permissions in the output directory
+4. Sufficient disk space is available
+
+**Q: The analysis is taking a very long time. Is this normal?**
+A: PHASE analysis time depends on:
+- Number of individuals and loci
+- Number of iterations
+- Complexity of recombination model
+- System performance
+
+Consider reducing iterations for testing or using parallel processing.
+
+**Q: I'm getting "Permission denied" errors.**
+A: Make sure:
+- PHASE binary is executable: `chmod +x /path/to/PHASE`
+- You have write access to the output directory
+- On macOS, allow the app in Security & Privacy settings
+
+## Advanced Usage
+
+**Q: Can I use custom δ-files for mutation models?**
+A: Yes! Select "From δ-file" in the mutation model dropdown and specify the path to your δ-file.
+
+**Q: How do I interpret the output files?**
+A: EZ-PHASE generates the same output as PHASE 2.1.1. Refer to the PHASE documentation for detailed explanation of output formats.
+
+**Q: Can I save my parameter settings?**
+A: Currently, EZ-PHASE doesn't save settings between sessions. This feature may be added in future versions.
+
+## Contributing & Development
+
+**Q: How can I contribute to EZ-PHASE?**
+A: See our [CONTRIBUTING.md](CONTRIBUTING.md) guide for details on reporting bugs, suggesting features, and submitting code.
+
+**Q: I found a bug. How do I report it?**
+A: Please [open an issue](https://github.com/yourusername/ez-phase/issues/new) on GitHub with details about the bug and steps to reproduce it.
+
+---
+
+# docs/TROUBLESHOOTING.md
+# EZ-PHASE Troubleshooting Guide
+
+## Common Issues and Solutions
+
+### Installation Problems
+
+#### Node.js Issues
+```bash
+# Error: Node version too old
+# Solution: Update Node.js to v16+
+node --version  # Check current version
+# Download latest from nodejs.org
+```
+
+#### Dependency Installation Failures
+```bash
+# Error: npm install fails
+# Solution: Clear cache and reinstall
+npm cache clean --force
+rm -rf node_modules package-lock.json
+npm install
+```
+
+### PHASE Binary Issues
+
+#### Binary Not Found
+```bash
+# Error: "PHASE binary not found"
+# Solutions:
+1. Use auto-detect: Click "🔍 Auto-detect PHASE Binary"
+2. Manual selection: Browse to PHASE executable
+3. Check common locations:
+   - /usr/local/bin/phase
+   - ~/Desktop/PHASE
+   - ~/Downloads/PHASE
+```
+
+#### Permission Denied
+```bash
+# macOS/Linux: Make executable
+chmod +x /path/to/PHASE
+
+# macOS: Allow in Security settings
+# System Preferences → Security & Privacy → Allow
+```
+
+### File Format Issues
+
+#### Invalid .inp Files
+```
+# Error: PHASE execution fails
+# Check your .inp file format:
+5        # Number of individuals
+10       # Number of loci  
+P 1 2 3 4 5 6 7 8 9 10    # Position line (required)
+SSSSSSSSS               # Sequence type (S/M for each locus)
+# Individual data...
+```
+
+#### Character Encoding
+```bash
+# Error: Strange characters in files
+# Solution: Ensure UTF-8 encoding
+# Convert if needed:
+iconv -f ISO-8859-1 -t UTF-8 input.inp > output.inp
+```
+
+### Performance Issues
+
+#### Slow Execution
+```
+Causes and Solutions:
+1. Large datasets → Reduce iterations for testing
+2. Complex models → Try simpler recombination models first
+3. Single threading → Enable parallel processing
+4. Insufficient RAM → Close other applications
+```
+
+#### Memory Issues
+```bash
+# Error: Out of memory
+# Solutions:
+1. Reduce number of parallel processes
+2. Process files in smaller batches
+3. Increase system swap space
+4. Use fewer iterations for initial testing
+```
+
+### Platform-Specific Issues
+
+#### macOS
+```bash
+# Error: "App is damaged and can't be opened"
+# Solution: Remove quarantine attribute
+xattr -dr com.apple.quarantine /path/to/EZ-PHASE.app
+
+# Error: Command line tools missing
+xcode-select --install
+```
+
+#### Windows
+```powershell
+# Error: PowerShell execution policy
+# Solution: Run as Administrator
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+
+# Error: Antivirus blocking
+# Solution: Add EZ-PHASE folder to antivirus exceptions
+```
+
+#### Linux
+```bash
+# Error: Missing libraries
+# Ubuntu/Debian:
+sudo apt update
+sudo apt install build-essential libxtst6 libxrandr2 libasound2 libpangocairo-1.0-0
+
+# CentOS/RHEL:
+sudo yum groupinstall "Development Tools"
+sudo yum install alsa-lib
+```
+
+### Getting Help
+
+If you're still having issues:
+
+1. **Check the logs**: Look in `ez_phase_output/phase_execution.log`
+2. **Search existing issues**: [GitHub Issues](https://github.com/yourusername/ez-phase/issues)
+3. **Create a new issue**: Include:
+   - Operating system and version
+   - Node.js version (`node --version`)
+   - Error messages or screenshots
+   - Steps to reproduce
+
+### Debug Mode
+
+Enable debug mode for more detailed logs:
+
+```javascript
+// In main.js, uncomment this line:
+mainWindow.webContents.openDevTools();
+```
+
+This opens Chrome DevTools for detailed debugging information.
