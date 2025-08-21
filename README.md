@@ -8,7 +8,7 @@ A user-friendly GUI wrapper for PHASE 2.1.1 haplotype phasing software, designed
 
 EZ-PHASE provides an intuitive graphical interface for the PHASE 2.1.1 command-line tool, enabling researchers to perform haplotype phasing analysis through a modern, easy-to-use interface. Perfect for population genetics, phylogeography, and evolutionary studies.
 
-##  Features
+## ✨ Features
 
 - **Point-and-click interface** - No command-line knowledge required
 - **Batch processing** - Process multiple .inp files simultaneously  
@@ -34,7 +34,7 @@ EZ-PHASE provides an intuitive graphical interface for the PHASE 2.1.1 command-l
 
 1. **Clone this repository:**
    ```bash
-   git clone https://github.com/JSBarrington/ez-phase.git
+   git clone https://github.com/jessebarrington/ez-phase.git
    cd ez-phase
    ```
 
@@ -54,7 +54,7 @@ EZ-PHASE provides an intuitive graphical interface for the PHASE 2.1.1 command-l
 
 1. **Select PHASE Binary**: 
    - Click "Browse" to manually locate your PHASE executable
-   - Or use "Auto-detect" to find it automatically
+   - The app validates the binary automatically
 
 2. **Choose Input Files**: 
    - Select a directory containing your .inp files
@@ -139,7 +139,7 @@ We welcome contributions! Here's how to get started:
 
 ```bash
 # Clone your fork
-git clone https://github.com/JSBarrington/ez-phase.git
+git clone https://github.com/jessebarrington/ez-phase.git
 cd ez-phase
 
 # Install dependencies
@@ -164,9 +164,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Support & Contact
 
-- **Issues**: [GitHub Issues](https://github.com/JSBarrington/ez-phase/issues)
-- **Documentation**: [Wiki](https://github.com/JSBarrington/ez-phase/wiki)
-- **Email**: your.email@example.com
+- **Issues**: [GitHub Issues](https://github.com/jessebarrington/ez-phase/issues)
+- **Documentation**: [Wiki](https://github.com/jessebarrington/ez-phase/wiki)
+- **Email**: jesse.barrington@gmail.com
 
 ## Citation
 
@@ -174,8 +174,8 @@ If you use EZ-PHASE in your research, please cite:
 
 ```
 EZ-PHASE: A User-Friendly GUI for PHASE 2.1.1 Haplotype Phasing
-Jesse Barrington (2025)
-GitHub: https://github.com/JSBarrington/ez-phase
+Jesse S. Barrington (2025)
+GitHub: https://github.com/jessebarrington/ez-phase
 ```
 
 And the original PHASE software:

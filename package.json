@@ -5,12 +5,12 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder",
+    "build": { "mac": { "icon": "build/icon.icns" } },
     "build-mac": "electron-builder --mac",
     "dist": "electron-builder --publish=never"
   },
   "keywords": ["ez-phase", "phase", "haplotype", "phasing", "bioinformatics", "gui"],
-  "author": "Your Name",
+  "author": "Jesse S. Barrington",
   "license": "MIT",
   "devDependencies": {
     "electron": "^28.0.0",
@@ -22,7 +22,7 @@
     "path": "^0.12.7"
   },
   "build": {
-    "appId": "com.yourname.ez-phase",
+    "appId": "jesse.barrington@gmail.com",
     "productName": "EZ-PHASE",
     "directories": {
       "output": "dist"

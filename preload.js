@@ -3,34 +3,27 @@ const { contextBridge, ipcRenderer } = require('electron');
 // Expose protected methods that allow the renderer process to use
 // the ipcRenderer without exposing the entire object
 contextBridge.exposeInMainWorld('electronAPI', {
-  selectDirectory: () => ipcRenderer.invoke('select-directory'),
+  selectDirectory:   () => ipcRenderer.invoke('select-directory'),
   selectPhaseBinary: () => ipcRenderer.invoke('select-phase-binary'),
-  autoDetectPhase: () => ipcRenderer.invoke('auto-detect-phase'),
-  runPhase: (config) => ipcRenderer.invoke('run-phase', config),
-  getAppVersion: () => ipcRenderer.invoke('get-app-version'),
-  
-  // Real-time output listeners
-  onPhaseOutput: (callback) => {
-    const subscription = (event, data) => callback(data);
-    ipcRenderer.on('phase-output', subscription);
-    
-    // Return cleanup function
-    return () => ipcRenderer.removeListener('phase-output', subscription);
+  runPhase:          (payload) => ipcRenderer.invoke('run-phase', payload),
+  getAppVersion:     () => ipcRenderer.invoke('get-app-version'),
+
+  // Live events with proper cleanup functions
+  onPhaseProgress: (cb) => {
+    const handler = (_e, data) => cb?.(data);
+    ipcRenderer.on('phase-progress', handler);
+    return () => ipcRenderer.removeListener('phase-progress', handler);
   },
   
-  onPhaseError: (callback) => {
-    const subscription = (event, data) => callback(data);
-    ipcRenderer.on('phase-error', subscription);
-    
-    // Return cleanup function
-    return () => ipcRenderer.removeListener('phase-error', subscription);
+  onPhaseOutput: (cb) => {
+    const handler = (_e, text) => cb?.(text);
+    ipcRenderer.on('phase-output', handler);
+    return () => ipcRenderer.removeListener('phase-output', handler);
   },
   
-  onPhaseProgress: (callback) => {
-    const subscription = (event, data) => callback(data);
-    ipcRenderer.on('phase-progress', subscription);
-    
-    // Return cleanup function
-    return () => ipcRenderer.removeListener('phase-progress', subscription);
+  onPhaseError: (cb) => {
+    const handler = (_e, text) => cb?.(text);
+    ipcRenderer.on('phase-error', handler);
+    return () => ipcRenderer.removeListener('phase-error', handler);
   }
 });

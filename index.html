@@ -5,6 +5,36 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EZ-PHASE - Easy Haplotype Phasing</title>
     <style>
+        :root {
+            /* Background */
+            --color-background: #E5EEDC;   /* soft sage green */
+            --primary-gradient-start: #E5EEDC;
+            --primary-gradient-end:   #D6E5C6;
+
+            /* Primary text & accents */
+            --color-primary: #1E3C43;       /* dark teal */
+            --color-primary-light: #305D57; /* lighter teal */
+
+            /* Secondary accents */
+            --color-accent-red:  #B53A3A;   /* muted academic red */
+            --color-accent-blue: #1E3C43;   /* reuse teal */
+
+            /* Special effects */
+            --color-arrow-fade-start: #1E3C43;
+            --color-arrow-fade-end:   #000000;
+
+            /* DNA Helix */
+            --color-helix-black: #000000;
+    
+            /* Neutral text */
+            --color-text:       #1E3C43;
+            --color-text-light: #FFFFFF;
+            --color-card: #ffffff;                 /* card & section background */
+            --color-input-bg: #ffffff;             /* input background */
+            --color-input-border: #DDE7DE;         /* sage-tinted light border */
+            --color-muted: #5d6b6b;                /* subtle text (hints, placeholders) */
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -13,7 +43,7 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  			background: linear-gradient(135deg, var(--primary-gradient-start, #667eea) 0%, var(--primary-gradient-end, #764ba2) 100%);
+            background: linear-gradient(135deg, var(--primary-gradient-start) 0%, var(--primary-gradient-end) 100%);
             min-height: 100vh;
             padding: 20px;
         }
@@ -34,14 +64,14 @@
         }
 
         .header h1 {
-            color: #2c3e50;
+            color: var(--color-primary);
             font-size: 2.5em;
             font-weight: 300;
             margin-bottom: 10px;
         }
 
         .header p {
-            color: #7f8c8d;
+            color: var(--color-primary-light);
             font-size: 1.1em;
         }
 
@@ -60,11 +90,11 @@
         }
 
         .form-section h3 {
-            color: #2c3e50;
+            color: var(--color-primary);
             margin-bottom: 20px;
             font-size: 1.3em;
             font-weight: 600;
-            border-bottom: 2px solid #3498db;
+            border-bottom: 2px solid var(--color-primary);
             padding-bottom: 10px;
         }
 
@@ -75,7 +105,7 @@
         .form-group label {
             display: block;
             margin-bottom: 8px;
-            color: #34495e;
+            color: var(--color-primary);
             font-weight: 500;
             font-size: 0.95em;
         }
@@ -83,18 +113,35 @@
         .form-group input, .form-group select {
             width: 100%;
             padding: 12px 15px;
-            border: 2px solid #e9ecef;
+            border: 2px solid var(--color-input-border);
             border-radius: 10px;
             font-size: 1em;
-            transition: all 0.3s ease;
-            background: white;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+            background: var(--color-input-bg);
+            color: var(--color-text);
         }
 
         .form-group input:focus, .form-group select:focus {
             outline: none;
-            border-color: #3498db;
-            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-primary) 18%, transparent);
             transform: translateY(-2px);
+        }
+
+        .form-group input::placeholder {
+            color: var(--color-muted);
+            opacity: 0.9;
+        }
+        
+        .form-group input:disabled, .form-group select:disabled {
+            background: #f1f5f3;
+            color: color-mix(in oklab, var(--color-text) 60%, white);
+            cursor: not-allowed;
+        }
+
+        .form-group input[aria-invalid="true"], .form-group select[aria-invalid="true"], .form-group .is-invalid {
+            border-color: var(--color-accent-red);
+            box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-accent-red) 18%, transparent);
         }
 
         .checkbox-group {
@@ -111,12 +158,12 @@
 
         .file-section {
             grid-column: 1 / -1;
-            background: linear-gradient(135deg, #74b9ff, #0984e3);
-            color: white;
+            background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
+            color: var(--color-text-light);
         }
 
         .file-section h3 {
-            color: white;
+            color: var(--color-text-light);
             border-bottom-color: rgba(255, 255, 255, 0.3);
         }
 
@@ -168,8 +215,8 @@
 
         .command-preview {
             grid-column: 1 / -1;
-            background: #2c3e50;
-            color: #ecf0f1;
+            background: #1a2b2f;
+            color: #eaf2f2;
             padding: 25px;
             border-radius: 15px;
             font-family: 'Monaco', 'Menlo', monospace;
@@ -178,7 +225,7 @@
         }
 
         .command-preview h3 {
-            color: #3498db;
+            color: var(--color-primary-light);
             margin-bottom: 15px;
             font-family: inherit;
         }
@@ -218,8 +265,8 @@
         }
 
         .btn-primary {
-            background: linear-gradient(45deg, #3498db, #2980b9);
-            color: white;
+            background: linear-gradient(45deg, var(--color-primary), var(--color-primary-light));
+            color: var(--color-text-light);
         }
 
         .btn-primary:hover:not(:disabled) {
@@ -228,12 +275,12 @@
         }
 
         .btn-secondary {
-            background: #95a5a6;
-            color: white;
+            background: #000000;
+            color: var(--color-text-light);
         }
 
         .btn-secondary:hover:not(:disabled) {
-            background: #7f8c8d;
+            background: #111111;
             transform: translateY(-2px);
         }
 
@@ -327,7 +374,7 @@
         .status-ready { background: #95a5a6; }
         .status-running { background: #f39c12; animation: pulse 2s infinite; }
         .status-success { background: #27ae60; }
-        .status-error { background: #e74c3c; }
+        .status-error { background: var(--color-accent-red); }
 
         @keyframes pulse {
             0%, 100% { opacity: 1; }
@@ -359,7 +406,16 @@
             color: #666;
             margin-top: 4px;
         }
-
+        
+        .app-logo {
+            width: 72px; 
+            height: 72px;
+            border-radius: 16px;
+            display: block;
+            margin: 0 auto 10px;
+            box-shadow: 0 6px 18px color-mix(in oklab, var(--color-primary) 25%, transparent);
+        }
+        
         @media (max-width: 768px) {
             .form-grid {
                 grid-template-columns: 1fr;
@@ -379,7 +435,8 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🧬 EZ-PHASE</h1>
+            <img class="app-logo" src="./assets/icon.png" alt="EZ-PHASE logo">
+            <h1>EZ-PHASE</h1>
             <p>Easy Haplotype Phasing - GUI for PHASE 2.1.1</p>
         </div>
 
@@ -391,26 +448,26 @@
                     
                     <!-- PHASE Binary Selection -->
                     <div class="form-group" style="margin-bottom: 25px;">
-    					<label style="color: white;">
-       						<span class="status-indicator" id="binaryStatus"></span>
-        					PHASE Binary Location
-       				 		<span class="binary-status" id="binaryStatusText">Not selected</span>
-    					</label>
-   					 	<div style="display: flex; gap: 10px; margin-bottom: 10px;">
-        					<input type="text" id="phaseBinaryPath" placeholder="Select PHASE executable..." readonly 
-               					style="flex: 1; background: rgba(255,255,255,0.9); color: #2c3e50;">
-        					<button type="button" onclick="selectPhaseBinary()" 
-                					style="padding: 10px 20px; background: rgba(255,255,255,0.3); border: 1px solid rgba(255,255,255,0.5); border-radius: 8px; color: white; cursor: pointer;">
-            					Browse
-        					</button>
-  	 	 				</div>
-    					<div class="hint" style="color: rgba(255,255,255,0.8); font-size: 0.85em; margin-top: 8px;">
-        					💡 Download PHASE 2.1.1 from the <a href="http://stephenslab.uchicago.edu/phase/download.html" target="_blank" style="color: rgba(255,255,255,0.9);">Stephens Lab website</a>
-    					</div>
-					</div>
+                        <label style="color: white;">
+                            <span class="status-indicator" id="binaryStatus"></span>
+                            PHASE Binary Location
+                            <span class="binary-status" id="binaryStatusText">Not selected</span>
+                        </label>
+                        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                            <input type="text" id="phaseBinPath" placeholder="Select PHASE executable..." readonly 
+                                   style="flex: 1; background: rgba(255,255,255,0.9); color: #2c3e50;">
+                            <button type="button" id="choosePhaseBin"
+                                    style="padding: 10px 20px; background: rgba(255,255,255,0.3); border: 1px solid rgba(255,255,255,0.5); border-radius: 8px; color: white; cursor: pointer;">
+                                Browse
+                            </button>
+                        </div>
+                        <div class="hint" style="color: rgba(255,255,255,0.8); font-size: 0.85em; margin-top: 8px;">
+                            💡 Download PHASE 2.1.1 from the <a href="http://stephenslab.uchicago.edu/phase/download.html" target="_blank" style="color: rgba(255,255,255,0.9);">Stephens Lab website</a>
+                        </div>
+                    </div>
                     
                     <!-- Directory Selection -->
-                    <div class="file-picker" onclick="selectDirectory()">
+                    <div class="file-picker" id="filePickerDiv">
                         <div class="file-picker-content">
                             <div class="file-icon">📂</div>
                             <div>
@@ -419,7 +476,8 @@
                             </div>
                         </div>
                     </div>
-                    <input type="file" id="directoryInput" webkitdirectory multiple style="display: none;">
+                    <input type="text" id="inputDirPath" placeholder="Selected directory path..." readonly 
+                           style="width: 100%; background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 8px; padding: 10px; margin-bottom: 10px;">
                     
                     <div id="selectedFiles" class="selected-files" style="display: none;">
                         <h4>Selected .inp Files:</h4>
@@ -450,22 +508,35 @@
                         <label for="thinning">Thinning (-T) <span class="tooltip" data-tooltip="Thinning interval">ℹ️</span></label>
                         <input type="number" id="thinning" name="thinning" value="1" min="1" max="100">
                     </div>
+
+                    <div class="form-group">
+                        <label for="parallel">
+                            Parallel Processing
+                            <span class="tooltip" data-tooltip="How many PHASE processes to run concurrently">ℹ️</span>
+                        </label>
+                        <select id="parallel" name="parallel">
+                            <option value="1">Single Process</option>
+                            <option value="2">2 Processes</option>
+                            <option value="4" selected>4 Processes</option>
+                            <option value="8">8 Processes</option>
+                        </select>
+                    </div>
                 </div>
 
                 <!-- Advanced Parameters -->
-                <div class="form-section" id="advanced">
+                <div class="form-section">
                     <h3>🔬 Advanced Parameters</h3>
 
                     <!-- Recombination model (-MR*) -->
                     <div class="form-group">
                         <label for="recombModel">
                             Recombination Model (-MR*)
-                            <span class="tooltip" data-tooltip="Choose how recombination varies across the region.">ℹ️</span>
+                            <span class="tooltip" data-tooltip="Choose how recombination varies across the region">ℹ️</span>
                         </label>
                         <select id="recombModel" name="recombModel">
                             <option value="MR0" selected>General variation (-MR0, default)</option>
                             <option value="MR1">Hotspot, unknown position (-MR1 1)</option>
-                            <option value="MR2">Hotspot(s), specified positions (-MR2 …)</option>
+                            <option value="MR2">Hotspot(s), specified positions (-MR2 ...)</option>
                             <option value="MR3">Constant rate, estimated (-MR3)</option>
                             <option value="MR4">Constant rate, fixed (-MR4 + -R)</option>
                         </select>
@@ -484,7 +555,7 @@
                     <div id="mr2Wrap" class="form-group" style="display:none;">
                         <label>
                             Hotspot intervals for -MR2
-                            <span class="tooltip" data-tooltip="Provide 1 or 2 [left,right] intervals in alignment coordinates.">ℹ️</span>
+                            <span class="tooltip" data-tooltip="Provide 1 or 2 [left,right] intervals in alignment coordinates">ℹ️</span>
                         </label>
                         <div class="inline" style="gap:8px;align-items:center;">
                             <select id="mr2Count" aria-label="Number of hotspots">
@@ -503,7 +574,7 @@
                     <div id="mr4Wrap" class="form-group" style="display:none;">
                         <label for="Rvalue">
                             Fixed recombination rate (-R) for -MR4
-                            <span class="tooltip" data-tooltip="Constant rate value used when you choose -MR4. Check manual for units.">ℹ️</span>
+                            <span class="tooltip" data-tooltip="Constant rate value used when you choose -MR4. Check manual for units">ℹ️</span>
                         </label>
                         <input id="Rvalue" type="number" step="any" min="0" placeholder="e.g., 0.001">
                     </div>
@@ -512,7 +583,7 @@
                     <div class="form-group">
                         <label for="Ncap">
                             Individuals for recombination estimation (-N)
-                            <span class="tooltip" data-tooltip="PHASE uses 100 by default when estimating recombination. Set to override.">ℹ️</span>
+                            <span class="tooltip" data-tooltip="PHASE uses 100 by default when estimating recombination. Set to override">ℹ️</span>
                         </label>
                         <input id="Ncap" type="number" min="1" placeholder="(optional)">
                     </div>
@@ -521,12 +592,12 @@
                     <div class="form-group">
                         <label for="dmodel">
                             Multi-allelic mutation model (-d)
-                            <span class="tooltip" data-tooltip="-d1 = PIM; blank = stepwise (default). Or provide a δ-file path.">ℹ️</span>
+                            <span class="tooltip" data-tooltip="-d1 = PIM; blank = stepwise (default). Or provide a δ-file path">ℹ️</span>
                         </label>
                         <select id="dmodel" name="dmodel">
                             <option value="">Stepwise (default)</option>
-                            <option value="1">Parent-Independent (PIM) — adds -d1</option>
-                            <option value="file">From δ-file — adds -d&lt;file&gt;</option>
+                            <option value="1">Parent-Independent (PIM) – adds -d1</option>
+                            <option value="file">From δ-file – adds -d&lt;file&gt;</option>
                         </select>
                         <div id="deltaFileWrap" class="inline" style="display:none;margin-top:6px;">
                             <input id="deltaFile" type="text" placeholder="Path to δ-file (e.g., /path/to/delta.txt)">
@@ -537,27 +608,12 @@
                     <div class="form-group">
                         <label>
                             Call Thresholds (-p, -q)
-                            <span class="tooltip" data-tooltip="Posterior probability cutoffs for phase/genotype calls.">ℹ️</span>
+                            <span class="tooltip" data-tooltip="Posterior probability cutoffs for phase/genotype calls">ℹ️</span>
                         </label>
                         <div class="inline">
                             <input id="pthresh" type="number" min="0" max="1" step="0.05" value="0.9" aria-label="Phase threshold (-p)">
                             <input id="qthresh" type="number" min="0" max="1" step="0.05" value="0.9" aria-label="Genotype threshold (-q)">
                         </div>
-                    </div>
-
-                    <!-- App-level concurrency -->
-                    <div class="form-group">
-                        <label for="parallel">
-                            Parallel Processing (app-level)
-                            <span class="tooltip" data-tooltip="How many PHASE processes the app spawns concurrently.">ℹ️</span>
-                        </label>
-                        <select id="parallel" name="parallel">
-                            <option value="1">Single Process</option>
-                            <option value="2">2 Processes</option>
-                            <option value="4" selected>4 Processes</option>
-                            <option value="8">8 Processes</option>
-                            <option value="auto">Auto-detect</option>
-                        </select>
                     </div>
                 </div>
 
@@ -592,7 +648,7 @@
 
             <div class="buttons">
                 <button type="button" class="btn btn-secondary" onclick="resetForm()">Reset</button>
-                <button type="button" class="btn btn-primary" id="runButton" onclick="runPhase()" disabled>
+                <button type="button" class="btn btn-primary" id="runBtn">
                     <span id="runButtonText">Run PHASE</span>
                 </button>
             </div>
@@ -616,435 +672,6 @@
         </form>
     </div>
 
-    <script>
-        let selectedInpFiles = [];
-        let selectedDirectory = '';
-        let phaseBinaryPath = '';
-        let isRunning = false;
-
-        // UI State Management
-        function updateRunButton() {
-    		const runButton = document.getElementById('runButton');
-    		const hasFiles = selectedInpFiles.length > 0;
-    		const hasBinary = phaseBinaryPath !== '';
-    		const canRun = hasFiles && hasBinary && !isRunning;
-    
-    		runButton.disabled = !canRun;
-    
-    		if (isRunning) {
-        		document.getElementById('runButtonText').textContent = 'Running...';
-    		} else if (!hasBinary) {
-        		document.getElementById('runButtonText').textContent = 'Select PHASE Binary';
-    		} else if (!hasFiles) {
-        		document.getElementById('runButtonText').textContent = 'Select Files';
-    		} else {
-        		document.getElementById('runButtonText').textContent = 'Run PHASE';
-    		}
-		}
-
-        function updateBinaryStatus(path = '') {
-            const statusIndicator = document.getElementById('binaryStatus');
-            const statusText = document.getElementById('binaryStatusText');
-            
-            if (path) {
-                statusIndicator.className = 'status-indicator status-success';
-                statusText.textContent = 'Valid';
-                statusText.className = 'binary-status valid';
-            } else {
-                statusIndicator.className = 'status-indicator status-ready';
-                statusText.textContent = 'Not selected';
-                statusText.className = 'binary-status';
-            }
-        }
-
-        // PHASE binary selection
-        async function selectPhaseBinary() {
-    		if (window.electronAPI) {
-    			const result = await window.electronAPI.selectPhaseBinary();
-       			 if (result) {
-            		phaseBinaryPath = result;
-            		document.getElementById('phaseBinaryPath').value = result;
-            		updateBinaryStatus(result);
-            		updateCommandPreview();
-            		updateRunButton();
-        		}
-    		} else {
-        		alert('PHASE binary selection only works in the Electron app.');
-    		}
-		}
-
-        // Directory selection
-        async function selectDirectory() {
-            if (window.electronAPI) {
-                const result = await window.electronAPI.selectDirectory();
-                
-                if (result) {
-                    selectedDirectory = result.directory;
-                    selectedInpFiles = result.files;
-                    updateFileDisplay();
-                    updateCommandPreview();
-                    updateRunButton();
-                }
-            } else {
-                // Web browser fallback
-                document.getElementById('directoryInput').click();
-            }
-        }
-
-        // Web browser file selection (fallback)
-        document.getElementById('directoryInput').addEventListener('change', function(e) {
-            const files = Array.from(e.target.files);
-            selectedInpFiles = files.filter(file => file.name.toLowerCase().endsWith('.inp'));
-            
-            if (files.length > 0) {
-                selectedDirectory = files[0].webkitRelativePath.split('/')[0];
-            }
-
-            updateFileDisplay();
-            updateCommandPreview();
-            updateRunButton();
-        });
-
-        function updateFileDisplay() {
-            const fileList = document.getElementById('fileList');
-            const selectedFilesDiv = document.getElementById('selectedFiles');
-            
-            if (selectedInpFiles.length > 0) {
-                selectedFilesDiv.style.display = 'block';
-                const rows = selectedInpFiles.map(f => {
-                    const name = typeof f === 'string' ? f.split(/[\\/]/).pop() : (f.name || f.path || 'unknown.inp');
-                    const size = (typeof f === 'object' && typeof f.size === 'number')
-                        ? `${(f.size/1024).toFixed(1)} KB`
-                        : '';
-                    return `<div class="file-item"><span>📄 ${name}</span><span>${size}</span></div>`;
-                });
-                fileList.innerHTML = rows.join('');
-            } else {
-                selectedFilesDiv.style.display = 'none';
-                fileList.innerHTML = '<div style="color:#e74c3c;text-align:center;">No .inp files found in selected directory</div>';
-            }
-        }
-
-        // Advanced UI Logic
-        function initAdvancedUI() {
-            const model = document.getElementById('recombModel');
-            const mr1 = document.getElementById('mr1Wrap');
-            const mr2 = document.getElementById('mr2Wrap');
-            const mr4 = document.getElementById('mr4Wrap');
-            const mr2Count = document.getElementById('mr2Count');
-            const a2 = document.getElementById('mr2_a2');
-            const b2 = document.getElementById('mr2_b2');
-            const dmodel = document.getElementById('dmodel');
-            const deltaWrap = document.getElementById('deltaFileWrap');
-
-            const refresh = () => {
-                const val = model?.value;
-                if (mr1) mr1.style.display = (val === 'MR1') ? 'block' : 'none';
-                if (mr2) mr2.style.display = (val === 'MR2') ? 'block' : 'none';
-                if (mr4) mr4.style.display = (val === 'MR4') ? 'block' : 'none';
-                if (mr2Count && a2 && b2) {
-                    const two = mr2Count.value === '2';
-                    a2.style.display = b2.style.display = two ? 'inline-block' : 'none';
-                }
-                if (deltaWrap && dmodel) deltaWrap.style.display = (dmodel.value === 'file') ? 'block' : 'none';
-            };
-
-            model?.addEventListener('change', refresh);
-            mr2Count?.addEventListener('change', refresh);
-            dmodel?.addEventListener('change', refresh);
-            refresh();
-        }
-
-        // Build advanced PHASE arguments
-        function buildAdvancedPhaseArgs() {
-            const args = [];
-
-            // -MR*
-            const model = (document.getElementById('recombModel')?.value) || 'MR0';
-            if (model === 'MR0' || model === 'MR3') {
-                args.push(`-${model}`);
-            } else if (model === 'MR1') {
-                args.push('-MR1', '1'); // v2.1: n=1
-            } else if (model === 'MR2') {
-                const n = document.getElementById('mr2Count')?.value || '1';
-                const a1 = +document.getElementById('mr2_a1').value;
-                const b1 = +document.getElementById('mr2_b1').value;
-                if (!a1 || !b1) throw new Error('Please provide a1 and b1 for -MR2.');
-                const ints = [Math.min(a1,b1), Math.max(a1,b1)];
-                if (n === '2') {
-                    const a2 = +document.getElementById('mr2_a2').value;
-                    const b2 = +document.getElementById('mr2_b2').value;
-                    if (!a2 || !b2) throw new Error('Please provide a2 and b2 for -MR2 with 2 hotspots.');
-                    ints.push(Math.min(a2,b2), Math.max(a2,b2));
-                }
-                args.push('-MR2', n, ...ints.map(String));
-            } else if (model === 'MR4') {
-                const R = (document.getElementById('Rvalue')?.value || '').trim();
-                if (!R) throw new Error('Please provide a -R value for -MR4.');
-                args.push('-MR4', '-R', R);
-            }
-
-            // -N
-            const N = (document.getElementById('Ncap')?.value || '').trim();
-            if (N) args.push('-N', N);
-
-            // -d
-            const dmodel = document.getElementById('dmodel')?.value || '';
-            if (dmodel === '1') {
-                args.push('-d1');
-            } else if (dmodel === 'file') {
-                const dfile = (document.getElementById('deltaFile')?.value || '').trim();
-                if (!dfile) throw new Error('Please choose a δ-file for -d<file>.');
-                args.push(`-d${dfile}`);
-            }
-
-            // -p / -q (only if changed)
-            const p = (document.getElementById('pthresh')?.value || '0.9').trim();
-            const q = (document.getElementById('qthresh')?.value || '0.9').trim();
-            if (p && p !== '0.9') args.push(`-p${p}`);
-            if (q && q !== '0.9') args.push(`-q${q}`);
-
-            return args;
-        }
-
-        // Real-time command preview update
-        function updateCommandPreview() {
-            const preview = document.getElementById('commandPreview');
-            
-            if (!phaseBinaryPath) {
-                preview.textContent = 'Select PHASE binary to see command preview...';
-                return;
-            }
-            
-            if (selectedInpFiles.length === 0) {
-                preview.textContent = 'Select input files to see command preview...';
-                return;
-            }
-
-            try {
-                let command = phaseBinaryPath;
-                
-                // Add basic parameters
-                const iterations = document.getElementById('iterations').value;
-                if (iterations) command += ` -X${iterations}`;
-                
-                const burnin = document.getElementById('burnin').value;
-                if (burnin) command += ` -B${burnin}`;
-                
-                const thinning = document.getElementById('thinning').value;
-                if (thinning && thinning !== '1') command += ` -T${thinning}`;
-                
-                const randomSeed = document.getElementById('randomSeed').value;
-                if (randomSeed) command += ` -S${randomSeed}`;
-                
-                // Add advanced parameters
-                const advancedArgs = buildAdvancedPhaseArgs();
-                if (advancedArgs.length > 0) {
-                    command += ' ' + advancedArgs.join(' ');
-                }
-                
-                // Add output options
-                if (document.getElementById('verbose').checked) command += ' -v';
-                if (document.getElementById('saveAll').checked) command += ' -F';
-                
-                // Add output prefix
-                const outputPrefix = document.getElementById('outputPrefix').value || 'phase_output';
-                
-                // Show sample command
-                const sampleFile = selectedInpFiles[0];
-                const sampleName = typeof sampleFile === 'string' ? sampleFile.split(/[\\/]/).pop() : (sampleFile.name || sampleFile.path || 'input.inp');
-                command += ` "${sampleName}" "${outputPrefix}.out"`;
-                
-                const parallel = document.getElementById('parallel').value;
-                if (parallel !== '1' && selectedInpFiles.length > 1) {
-                    preview.innerHTML = `<strong>Will execute ${selectedInpFiles.length} files with ${parallel} parallel processes</strong>\n\nSample command:\n${command}`;
-                } else {
-                    preview.innerHTML = `<strong>Will execute ${selectedInpFiles.length} file(s) sequentially</strong>\n\nSample command:\n${command}`;
-                }
-            } catch (error) {
-                preview.innerHTML = `<strong style="color: #e74c3c;">Error in parameters:</strong>\n${error.message}`;
-            }
-        }
-
-        function resetForm() {
-            document.getElementById('phaseForm').reset();
-            selectedInpFiles = [];
-            selectedDirectory = '';
-            phaseBinaryPath = '';
-            document.getElementById('phaseBinaryPath').value = '';
-            document.getElementById('selectedFiles').style.display = 'none';
-            document.getElementById('iterations').value = '100';
-            document.getElementById('burnin').value = '100';
-            document.getElementById('thinning').value = '1';
-            document.getElementById('outputPrefix').value = 'phase_output';
-            document.getElementById('verbose').checked = true;
-            
-            // Reset UI states
-            updateBinaryStatus();
-            updateCommandPreview();
-            updateRunButton();
-            hideProgress();
-            hideOutput();
-        }
-
-        function showProgress() {
-            document.getElementById('progressSection').style.display = 'block';
-        }
-
-        function hideProgress() {
-            document.getElementById('progressSection').style.display = 'none';
-            document.getElementById('progressFill').style.width = '0%';
-        }
-
-        function updateProgress(percent, text) {
-            document.getElementById('progressFill').style.width = percent + '%';
-            document.getElementById('progressText').textContent = text;
-        }
-
-        function showOutput() {
-            document.getElementById('outputSection').style.display = 'block';
-        }
-
-        function hideOutput() {
-            document.getElementById('outputSection').style.display = 'none';
-            document.getElementById('outputContent').innerHTML = '';
-        }
-
-        function appendOutput(text, isError = false) {
-            const outputContent = document.getElementById('outputContent');
-            const div = document.createElement('div');
-            div.style.color = isError ? '#e74c3c' : '#ecf0f1';
-            div.textContent = text;
-            outputContent.appendChild(div);
-            outputContent.scrollTop = outputContent.scrollHeight;
-        }
-
-        async function runPhase() {
-            if (isRunning) return;
-            
-            if (selectedInpFiles.length === 0) {
-                alert('Please select a directory containing .inp files first.');
-                return;
-            }
-
-            if (!phaseBinaryPath) {
-                alert('Please select the PHASE binary executable first.');
-                return;
-            }
-
-            isRunning = true;
-            updateRunButton();
-            showProgress();
-            showOutput();
-            
-            // Clear previous output
-            document.getElementById('outputContent').innerHTML = '';
-            
-            try {
-                // Build advanced arguments
-                const advancedArgs = buildAdvancedPhaseArgs();
-                
-                // Prepare configuration
-                const config = {
-                    directory: selectedDirectory,
-                    files: selectedInpFiles,
-                    phaseBinaryPath: phaseBinaryPath,
-                    parallel: document.getElementById('parallel').value === 'auto' ? 4 : parseInt(document.getElementById('parallel').value),
-                    randomSeed: document.getElementById('randomSeed').value,
-                    iterations: document.getElementById('iterations').value,
-                    burnin: document.getElementById('burnin').value,
-                    thinning: document.getElementById('thinning').value,
-                    outputPrefix: document.getElementById('outputPrefix').value || 'phase_output',
-                    advancedArgs: advancedArgs,
-                    options: {
-                        verbose: document.getElementById('verbose').checked,
-                        saveAll: document.getElementById('saveAll').checked
-                    }
-                };
-
-                console.log('Running PHASE with config:', config);
-
-                if (window.electronAPI) {
-                    // Set up real-time listeners
-                    const cleanupOutput = window.electronAPI.onPhaseOutput((data) => {
-                        appendOutput(data.trim());
-                    });
-
-                    const cleanupError = window.electronAPI.onPhaseError((data) => {
-                        appendOutput(data.trim(), true);
-                    });
-
-                    const cleanupProgress = window.electronAPI.onPhaseProgress((data) => {
-                        const { progress, processedFiles, totalFiles } = data;
-                        updateProgress(progress, `Processing file ${processedFiles} of ${totalFiles}...`);
-                    });
-
-                    updateProgress(10, 'Starting PHASE execution...');
-                    
-                    const result = await window.electronAPI.runPhase(config);
-                    
-                    // Cleanup listeners
-                    cleanupOutput();
-                    cleanupError();
-                    cleanupProgress();
-                    
-                    updateProgress(100, 'Completed successfully!');
-                    
-                    setTimeout(() => {
-                        alert(`✅ EZ-PHASE analysis completed successfully!\n\n📁 Processed ${result.processedFiles} files\n📂 Output directory: ${result.outputDirectory}\n\nCheck the output directory for results and log files.`);
-                        hideProgress();
-                        isRunning = false;
-                        updateRunButton();
-                    }, 1000);
-                    
-                } else {
-                    // Web browser fallback - simulate progress
-                    let progress = 0;
-                    appendOutput('Demo mode: Simulating PHASE execution...');
-                    
-                    const progressInterval = setInterval(() => {
-                        progress += Math.random() * 15;
-                        if (progress > 100) progress = 100;
-                        
-                        updateProgress(progress, `Demo: Processing files... ${Math.round(progress)}%`);
-                        appendOutput(`Demo progress: ${Math.round(progress)}%`);
-                        
-                        if (progress >= 100) {
-                            clearInterval(progressInterval);
-                            setTimeout(() => {
-                                alert(`🎯 Demo completed!\n\nIn the full Electron app, this would execute:\n\n${selectedInpFiles.length} files with the configured parameters.\n\nGenerated commands are shown in the preview section.`);
-                                hideProgress();
-                                isRunning = false;
-                                updateRunButton();
-                            }, 500);
-                        }
-                    }, 300);
-                }
-            } catch (error) {
-                console.error('PHASE parameter error:', error);
-                appendOutput(`❌ Parameter error: ${error.message}`, true);
-                alert(`❌ Parameter Error:\n\n${error.message}\n\nPlease check your advanced parameter settings.`);
-                hideProgress();
-                isRunning = false;
-                updateRunButton();
-            }
-        }
-
-        // Initialize everything when the page loads
-        document.addEventListener('DOMContentLoaded', () => {
-            initAdvancedUI();
-            updateCommandPreview();
-            updateRunButton();
-            updateBinaryStatus();
-            
-            // Set up real-time command preview updates
-            document.getElementById('phaseForm').addEventListener('input', updateCommandPreview);
-            document.getElementById('phaseForm').addEventListener('change', updateCommandPreview);
-        });
-
-        // Debug: Check if electronAPI is available
-        console.log('electronAPI available:', !!window.electronAPI);
-        console.log('electronAPI methods:', window.electronAPI ? Object.keys(window.electronAPI) : 'undefined');
-    </script>
+    <script src="./renderer.js"></script>
 </body>
 </html>
