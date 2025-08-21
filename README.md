@@ -2,7 +2,7 @@
 
 A user-friendly GUI wrapper for PHASE 2.1.1 haplotype phasing software, designed to make population genetics analysis accessible to researchers without extensive command-line experience.
 
-![EZ-PHASE Logo](assets/icon.png)
+![EZ-PHASE Logo](docs/icon.png)
 
 ## 🧬 About
 
