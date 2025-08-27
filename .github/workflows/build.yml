@@ -46,7 +46,7 @@ jobs:
     - name: Install dependencies
       run: npm ci
 
-    # THIS IS THE NEW STEP TO FIX THE BUILD
+    # THIS IS THE DEFINITIVE FIX FOR THE GITHUB BUILD
     - name: Install GNU Parallel
       if: runner.os != 'Windows'
       run: |
@@ -57,7 +57,7 @@ jobs:
         fi
         
     - name: Build application
-      run: npm run build-all # Changed to build-all to match your package.json
+      run: npm run build-all
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         

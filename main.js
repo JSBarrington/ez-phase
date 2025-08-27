@@ -204,7 +204,7 @@ async function executePhase(config) {
   });
 }
 
-// RESTORED ORIGINAL, WORKING SCRIPT GENERATION LOGIC
+// THIS IS THE CORRECTED, ORIGINAL SCRIPT GENERATION LOGIC
 function generatePhaseScript(cfg) {
   const { files, phaseBinaryPath, outputDir, outputPrefix, iterations, burnin, thinning, advancedArgs = [], options = {}, randomSeed, parallel = 4 } = cfg;
   const logFile = path.join(outputDir, 'phase_execution.log');
@@ -262,3 +262,4 @@ echo "All jobs completed."
 
 // App version
 ipcMain.handle('get-app-version', () => app.getVersion());
+
