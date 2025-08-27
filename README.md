@@ -4,7 +4,7 @@
 
 A modern, user-friendly graphical interface for the PHASE haplotype reconstruction software, featuring enhanced file management, parallel processing, and advanced parameter control.
 
-![EZ-PHASE Interface](assets/icon.png)
+![EZ-PHASE Logo](assets/icon2.png)
 
 ## 🌟 Features
 
@@ -192,4 +192,6 @@ haplotype reconstruction from population data. American Journal of Human Genetic
 
 ---
 
+<<<<<<< HEAD
 **Made with ❤️ for the bioinformatics community**
+**⭐ Star this repository if EZ-PHASE helps your research!**
