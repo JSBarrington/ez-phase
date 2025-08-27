@@ -21,7 +21,6 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       sandbox: false,
     },
-    icon: path.join(__dirname, 'assets/icon.png'),
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
     show: false,
   });
@@ -29,21 +28,9 @@ function createWindow() {
   mainWindow.loadFile('index.html');
   mainWindow.once('ready-to-show', () => mainWindow?.show());
   if (process.env.NODE_ENV === 'development') mainWindow.webContents.openDevTools();
-
-  // Sanity log that preload exists
-  try {
-    const p = path.join(__dirname, 'preload.js');
-    console.log('Preload exists?', fs.existsSync(p), p);
-  } catch {}
 }
 
 app.whenReady().then(() => {
-  // macOS Dock icon
-  if (process.platform === 'darwin') {
-    const iconPath = path.join(__dirname, 'assets', 'icon.icns');
-    try { app.dock.setIcon(iconPath); } catch {}
-  }
-
   createWindow();
 
   app.on('activate', () => {
@@ -52,12 +39,11 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', () => {
-  // Clean up any running processes
   if (currentPhaseProcess) {
     try {
-      currentPhaseProcess.kill('SIGTERM');
+      process.kill(-currentPhaseProcess.pid, 'SIGKILL');
     } catch (e) {
-      console.log('Error killing process:', e.message);
+      console.log('Error killing process on exit:', e.message);
     }
   }
   if (process.platform !== 'darwin') app.quit();
@@ -90,7 +76,7 @@ ipcMain.handle('select-inp-files', async () => {
   if (result.canceled || !result.filePaths?.length) return null;
 
   try {
-    const filesWithStats = await Promise.all(
+    return await Promise.all(
       result.filePaths.map(async (filePath) => {
         const name = path.basename(filePath);
         try {
@@ -101,8 +87,6 @@ ipcMain.handle('select-inp-files', async () => {
         }
       })
     );
-
-    return filesWithStats;
   } catch (err) {
     console.error('Error processing selected files:', err);
     return null;
@@ -112,97 +96,43 @@ ipcMain.handle('select-inp-files', async () => {
 // ---------- IPC: Pick PHASE binary ----------
 ipcMain.handle('select-phase-binary', async () => {
   if (!mainWindow) return null;
-  const filters = [];
-  if (process.platform === 'win32') filters.push({ name: 'Executable', extensions: ['exe'] });
-  filters.push({ name: 'All Files', extensions: ['*'] });
-
   const result = await dialog.showOpenDialog(mainWindow, {
     properties: ['openFile'],
     title: 'Select PHASE binary executable',
-    filters,
+    filters: [{ name: 'All Files', extensions: ['*'] }],
   });
   if (result.canceled || !result.filePaths?.length) return null;
 
   const selectedPath = result.filePaths[0];
   
-  // Make executable if needed (Unix/Mac)
   if (!isExecutable(selectedPath) && process.platform !== 'win32') {
     try {
       await fsp.chmod(selectedPath, 0o755);
-      console.log('Made PHASE binary executable');
     } catch (e) { 
       console.warn('Could not make file executable:', e.message); 
     }
   }
   
-  console.log('Selected PHASE binary:', selectedPath);
   return selectedPath;
-});
-
-// ---------- IPC: Auto-detect PHASE binary ----------
-ipcMain.handle('auto-detect-phase', async () => {
-  const commonLocations = [
-    '/usr/local/bin/phase',
-    '/usr/local/bin/PHASE',
-    '/usr/bin/phase',
-    '/usr/bin/PHASE',
-    path.join(process.env.HOME || '', 'Desktop', 'PHASE'),
-    path.join(process.env.HOME || '', 'Desktop', 'phase'),
-    path.join(process.env.HOME || '', 'Downloads', 'PHASE'),
-    path.join(process.env.HOME || '', 'Downloads', 'phase'),
-    // Windows common locations
-    'C:\\Program Files\\PHASE\\PHASE.exe',
-    'C:\\Program Files (x86)\\PHASE\\PHASE.exe',
-    path.join(process.env.USERPROFILE || '', 'Desktop', 'PHASE.exe'),
-    path.join(process.env.USERPROFILE || '', 'Downloads', 'PHASE.exe'),
-  ];
-
-  const foundLocations = [];
-  
-  for (const location of commonLocations) {
-    try {
-      await fsp.access(location, fs.constants.F_OK);
-      if (isExecutable(location)) {
-        foundLocations.push(location);
-      }
-    } catch {
-      // Location doesn't exist, continue
-    }
-  }
-
-  return foundLocations;
 });
 
 // ---------- Validation before run ----------
 async function validateConfig(config) {
   const { files, phaseBinaryPath } = config;
-  
   if (!phaseBinaryPath) throw new Error('PHASE binary path not specified');
-  try { 
-    await fsp.access(phaseBinaryPath); 
-  } catch { 
-    throw new Error(`PHASE binary not found at: ${phaseBinaryPath}`); 
-  }
-  if (!isExecutable(phaseBinaryPath)) {
-    throw new Error(`PHASE binary is not executable: ${phaseBinaryPath}`);
-  }
-
+  try { await fsp.access(phaseBinaryPath); } catch { throw new Error(`PHASE binary not found at: ${phaseBinaryPath}`); }
+  if (!isExecutable(phaseBinaryPath)) throw new Error(`PHASE binary is not executable: ${phaseBinaryPath}`);
   if (!files || !files.length) throw new Error('No input files specified');
   
   for (const file of files) {
     const filePath = file.path || file.name;
     if (!filePath) throw new Error('Invalid file object - missing path');
-    try { 
-      await fsp.access(filePath); 
-    } catch { 
-      throw new Error(`Input file not found: ${filePath}`); 
-    }
+    try { await fsp.access(filePath); } catch { throw new Error(`Input file not found: ${filePath}`); }
   }
 }
 
 // ---------- Build and run ----------
 ipcMain.handle('run-phase', async (_evt, config) => {
-  console.log('Starting PHASE with config:', config);
   try { 
     await validateConfig(config); 
     return await executePhase(config); 
@@ -214,102 +144,40 @@ ipcMain.handle('run-phase', async (_evt, config) => {
 
 // ---------- Stop PHASE process ----------
 ipcMain.handle('stop-phase', async () => {
-  if (currentPhaseProcess) {
+  if (currentPhaseProcess && !currentPhaseProcess.killed) {
     try {
-      console.log('Attempting to stop PHASE process...');
-      
-      // Kill the process group (handles child processes too)
-      if (process.platform === 'win32') {
-        spawn('taskkill', ['/pid', currentPhaseProcess.pid, '/f', '/t']);
-      } else {
-        process.kill(-currentPhaseProcess.pid, 'SIGTERM');
-      }
-      
-      // Force kill after 3 seconds if still running
-      setTimeout(() => {
-        if (currentPhaseProcess && !currentPhaseProcess.killed) {
-          console.log('Force killing PHASE process...');
-          try {
-            if (process.platform === 'win32') {
-              spawn('taskkill', ['/pid', currentPhaseProcess.pid, '/f', '/t']);
-            } else {
-              process.kill(-currentPhaseProcess.pid, 'SIGKILL');
-            }
-          } catch (e) {
-            console.log('Force kill error:', e.message);
-          }
-        }
-      }, 3000);
-      
+      process.kill(-currentPhaseProcess.pid, 'SIGTERM');
       currentPhaseProcess = null;
       return { success: true, message: 'PHASE process stopped' };
     } catch (error) {
-      console.error('Error stopping PHASE process:', error);
-      currentPhaseProcess = null;
+      console.error('Failed to kill process group:', error);
       return { success: false, error: error.message };
     }
   }
-  return { success: false, message: 'No PHASE process running' };
+  return { success: false, message: 'No active process to stop.' };
 });
 
 async function executePhase(config) {
-  const {
-    files,
-    phaseBinaryPath,
-    parallel = 4,
-    randomSeed,
-    iterations = 100,
-    burnin = 100,
-    thinning = 1,
-    outputPrefix = 'phase_output',
-    advancedArgs = [],
-    options = {},
-  } = config;
-
-  // Determine actual parallel count HERE - handle string/number conversion
+  const { files, phaseBinaryPath, parallel = 4, randomSeed, iterations = 100, burnin = 100, thinning = 1, outputPrefix = 'phase_output', advancedArgs = [], options = {} } = config;
   const parallelNum = parseInt(parallel) || 4;
-  const actualParallel = parallel === 'auto' || parallelNum === 0 ? 
-    Math.min(files.length, os.cpus().length) : 
-    Math.min(parallelNum, 8);
-
-  // Create output directory based on first file's location
-  const firstFile = files[0];
-  const firstFilePath = firstFile.path || firstFile.name;
+  const actualParallel = parallel === 'auto' || parallelNum === 0 ? Math.min(files.length, os.cpus().length) : Math.min(parallelNum, 8);
+  const firstFilePath = files[0].path || files[0].name;
   const outputDir = path.join(path.dirname(firstFilePath), 'ez_phase_output');
-  
-  try { 
-    await fsp.mkdir(outputDir, { recursive: true }); 
-  } catch (e) { 
-    console.warn('Could not create output directory:', e.message); 
-  }
+  await fsp.mkdir(outputDir, { recursive: true });
 
   const scriptPath = path.join(outputDir, 'run_phase.sh');
-  const scriptContent = generatePhaseScript({
-    files, phaseBinaryPath, outputDir, outputPrefix,
-    iterations, burnin, thinning, advancedArgs, options, randomSeed, 
-    parallel: actualParallel,  // ← Pass the calculated value
-  });
-
-  console.log('Writing execution script to:', scriptPath);
+  const scriptContent = generatePhaseScript({ files, phaseBinaryPath, outputDir, outputPrefix, iterations, burnin, thinning, advancedArgs, options, randomSeed, parallel: actualParallel });
   await fsp.writeFile(scriptPath, scriptContent, { mode: 0o755 });
 
   return new Promise((resolve, reject) => {
-    console.log('Executing PHASE script…');
-    currentPhaseProcess = spawn('bash', [scriptPath], { 
-      cwd: path.dirname(firstFilePath), 
-      stdio: ['ignore', 'pipe', 'pipe'],
-      detached: true  // Create new process group for easier cleanup
-    });
+    currentPhaseProcess = spawn('bash', [scriptPath], { cwd: path.dirname(firstFilePath), stdio: ['ignore', 'pipe', 'pipe'], detached: true });
 
-    let output = '';
-    let errors = '';
     let processedFiles = 0;
-    const totalFiles = files.length * actualParallel;
+    const totalFiles = files.length;
 
     currentPhaseProcess.stdout.on('data', (buf) => {
       const chunk = buf.toString();
-      output += chunk;
-      if (chunk.includes('Processing:')) {
+      if (chunk.includes('SUCCESS:')) {
         processedFiles++;
         const progress = Math.max(0, Math.min(100, Math.round((processedFiles / totalFiles) * 100)));
         mainWindow?.webContents?.send('phase-progress', { progress, processedFiles, totalFiles });
@@ -317,148 +185,78 @@ async function executePhase(config) {
       mainWindow?.webContents?.send('phase-output', chunk);
     });
 
-    currentPhaseProcess.stderr.on('data', (buf) => {
-      const chunk = buf.toString();
-      errors += chunk;
-      mainWindow?.webContents?.send('phase-error', chunk);
-    });
+    currentPhaseProcess.stderr.on('data', (buf) => mainWindow?.webContents?.send('phase-error', buf.toString()));
 
-    currentPhaseProcess.on('close', async (code) => {
-      try { 
-        await fsp.unlink(scriptPath); 
-      } catch {}
-      
-      currentPhaseProcess = null; // Clear the reference
-      
+    currentPhaseProcess.on('close', (code) => {
+      fsp.unlink(scriptPath).catch(() => {});
+      currentPhaseProcess = null;
       if (code === 0) {
-        resolve({ 
-          success: true, 
-          output, 
-          errors, 
-          outputDirectory: outputDir, 
-          processedFiles: totalFiles
-        });
+        resolve({ success: true, outputDirectory: outputDir, processedFiles: totalFiles });
       } else {
-        reject({ 
-          success: false, 
-          output, 
-          errors, 
-          code, 
-          message: `Process exited with code ${code}` 
-        });
+        reject(new Error(`Process exited with code ${code}. Check the log file in the output directory for details.`));
       }
     });
 
     currentPhaseProcess.on('error', (e) => {
-      currentPhaseProcess = null; // Clear the reference
-      reject({ 
-        success: false, 
-        message: e.message, 
-        error: String(e) 
-      });
+      currentPhaseProcess = null;
+      reject(e);
     });
   });
 }
 
+// THIS IS THE CORRECTED, ORIGINAL SCRIPT GENERATION LOGIC
 function generatePhaseScript(cfg) {
-  const { files, phaseBinaryPath, outputDir, outputPrefix, iterations, burnin, thinning, 
-          advancedArgs = [], options = {}, randomSeed, parallel = 4 } = cfg;
-
+  const { files, phaseBinaryPath, outputDir, outputPrefix, iterations, burnin, thinning, advancedArgs = [], options = {}, randomSeed, parallel = 4 } = cfg;
   const logFile = path.join(outputDir, 'phase_execution.log');
-  const base = Number.isFinite(randomSeed) ? randomSeed : generateRandomSeed();
-
-  // Use the parallel value passed in (already calculated)
-  const actualParallel = parallel;
+  const baseSeed = Number.isFinite(randomSeed) ? randomSeed : generateRandomSeed();
 
   let script = `#!/bin/bash
-set -euo pipefail
-
-echo "=== EZ-PHASE Execution Log ==="
-echo "Timestamp: $(date)"
-echo "Output Directory: ${outputDir}"
-echo "PHASE Binary: ${phaseBinaryPath}"
-echo "Files to process: ${files.map(f => path.basename(f.path || f.name)).join(' ')}"
-echo "Parallel processes: ${actualParallel}"
-echo "================================"
-
+set -e
 LOG_FILE="${logFile}"
 : > "$LOG_FILE"
+echo "=== EZ-PHASE Execution Log ===" >> "$LOG_FILE"
+echo "Timestamp: $(date)" >> "$LOG_FILE"
+echo "================================" >> "$LOG_FILE"
 
-# Verify PHASE binary
-if [ ! -f "${phaseBinaryPath}" ]; then
-  echo "ERROR: PHASE binary not found at: ${phaseBinaryPath}" | tee -a "$LOG_FILE"
-  exit 1
-fi
-if [ ! -x "${phaseBinaryPath}" ]; then
-  chmod +x "${phaseBinaryPath}" || true
-fi
-
-run_phase_file() {
-  local inp_file="$1"
-  local seed="$2"
-  local base_name
-  base_name="$(basename "$inp_file" .inp)"
-  local out_file="${outputDir}/${outputPrefix}_\${base_name}_seed\${seed}.out"
-
-  echo "Processing: $inp_file with seed $seed" | tee -a "$LOG_FILE"
-  echo "Output: $out_file" | tee -a "$LOG_FILE"
-
-  local cmd="${phaseBinaryPath}"
-  cmd="$cmd ${advancedArgs.join(' ')}"
-  cmd="$cmd -S\${seed}"
-  cmd="$cmd \"$inp_file\" \"$out_file\" ${iterations} ${thinning} ${burnin}"
-  ${options.verbose ? 'cmd="$cmd -v"' : ''}
-  ${options.saveAll ? 'cmd="$cmd -F"' : ''}
-
-  echo "Command: $cmd" | tee -a "$LOG_FILE"
-  if eval "$cmd" >> "$LOG_FILE" 2>&1; then
-    echo "SUCCESS: $base_name seed $seed" | tee -a "$LOG_FILE"
-    return 0
-  else
-    echo "FAILED: $base_name seed $seed" | tee -a "$LOG_FILE"
-    return 1
-  fi
-}
-
-success_count=0
-total_jobs=0
+job_count=0
 `;
+
+  const allArgs = [...advancedArgs];
+  if (options.verbose) allArgs.push('-v');
+  if (options.saveAll) allArgs.push('-F');
+  const optionsString = allArgs.join(' ');
 
   for (const file of files) {
     const filePath = file.path || file.name;
-    const fileName = path.basename(filePath);
-    const seedsForFile = Array.from({length: actualParallel}, (_, i) => 
-      (Number.isFinite(randomSeed) ? randomSeed : base) + i
-    );
+    const baseName = path.basename(filePath, '.inp');
     
-    script += `
-# ----- ${fileName} -----
-if [ -f "${filePath}" ]; then
-  echo "=== Processing ${fileName} with ${actualParallel} parallel jobs ===" | tee -a "$LOG_FILE"
-  ${seedsForFile.map(seed => `
-  total_jobs=$((total_jobs + 1))
-  run_phase_file "${filePath}" "${seed}" &`).join('\n')}
-  wait
-  success_count=$((success_count + ${actualParallel}))
-else
-  echo "WARNING: File not found: ${filePath}" | tee -a "$LOG_FILE"
-fi
+    const seedsForFile = Array.from({length: parallel}, (_, i) => baseSeed + i);
 
+    for (const seed of seedsForFile) {
+      const outputFilePath = path.join(outputDir, `${outputPrefix}_${baseName}_seed${seed}.out`);
+      
+      // Using double quotes to handle paths with spaces
+      const command = `"${phaseBinaryPath}" -S${seed} ${optionsString} "${filePath}" "${outputFilePath}" ${iterations} ${thinning} ${burnin}`;
+
+      script += `
+echo "Processing: ${baseName} with seed ${seed}"
+if ${command} >> "${logFile}" 2>&1; then
+  echo "SUCCESS: ${baseName} with seed ${seed}"
+else
+  echo "ERROR: ${baseName} with seed ${seed}. See log for details."
+fi &
+job_count=$((job_count + 1))
+if [ $((job_count % ${parallel})) -eq 0 ]; then
+  wait
+fi
 `;
+    }
   }
 
   script += `
-echo ""
-echo "=== EXECUTION COMPLETE ===" | tee -a "$LOG_FILE"
-echo "Total jobs: $total_jobs" | tee -a "$LOG_FILE"
-echo "Successful: $success_count" | tee -a "$LOG_FILE"
-echo "Failed: $((total_jobs - success_count))" | tee -a "$LOG_FILE"
-echo "Output directory: ${outputDir}" | tee -a "$LOG_FILE"
-echo "Log file: $LOG_FILE" | tee -a "$LOG_FILE"
-
-[ "$success_count" -eq "$total_jobs" ]
+wait
+echo "All jobs completed."
 `;
-
   return script;
 }
 

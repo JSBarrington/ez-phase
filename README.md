@@ -4,7 +4,7 @@
 
 A modern, user-friendly graphical interface for the PHASE haplotype reconstruction software, featuring enhanced file management, parallel processing, and advanced parameter control.
 
-![EZ-PHASE Logo](assets/icon2.png)
+![EZ-PHASE Logo](assets/icon.png)
 
 ## 🌟 Features
 
