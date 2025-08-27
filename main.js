@@ -204,7 +204,7 @@ async function executePhase(config) {
   });
 }
 
-// THIS IS THE CORRECTED, ORIGINAL SCRIPT GENERATION LOGIC
+// RESTORED ORIGINAL, WORKING SCRIPT GENERATION LOGIC
 function generatePhaseScript(cfg) {
   const { files, phaseBinaryPath, outputDir, outputPrefix, iterations, burnin, thinning, advancedArgs = [], options = {}, randomSeed, parallel = 4 } = cfg;
   const logFile = path.join(outputDir, 'phase_execution.log');
@@ -235,7 +235,7 @@ job_count=0
     for (const seed of seedsForFile) {
       const outputFilePath = path.join(outputDir, `${outputPrefix}_${baseName}_seed${seed}.out`);
       
-      // Using double quotes to handle paths with spaces
+      // Using double quotes to handle paths with spaces safely
       const command = `"${phaseBinaryPath}" -S${seed} ${optionsString} "${filePath}" "${outputFilePath}" ${iterations} ${thinning} ${burnin}`;
 
       script += `
