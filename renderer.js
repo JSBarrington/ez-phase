@@ -1,14 +1,12 @@
-// renderer.js – EZ-PHASE (Clean version)
-// Handles file selection, parameter collection, and PHASE execution
-
+// renderer.js — EZ-PHASE Enhanced version
 document.addEventListener('DOMContentLoaded', () => {
   // -------------------------------
   // State
   // -------------------------------
   let phaseBinaryPath = '';
-  let selectedDirectory = '';
-  let selectedInpFiles = [];
+  let selectedInpFiles = []; // Array of file objects with status
   let isRunning = false;
+  let currentProcess = null; // Store current PHASE process for stopping
 
   // -------------------------------
   // Elements
@@ -16,15 +14,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnChooseBin = document.getElementById('choosePhaseBin');
   const btnChooseInp = document.getElementById('filePickerDiv');
   const runBtn = document.getElementById('runBtn');
+  const stopBtn = document.getElementById('stopBtn');
 
   const binPathInput = document.getElementById('phaseBinPath');
-  const inpDirInput = document.getElementById('inputDirPath');
+  const fileInput = document.getElementById('fileInput');
   const fileListEl = document.getElementById('fileList');
   const filesWrap = document.getElementById('selectedFiles');
   const previewEl = document.getElementById('commandPreview');
-
-  const binaryStatus = document.getElementById('binaryStatus');
-  const binaryStatusText = document.getElementById('binaryStatusText');
 
   // Progress elements
   const progressSection = document.getElementById('progressSection');
@@ -33,10 +29,18 @@ document.addEventListener('DOMContentLoaded', () => {
   const outputSection = document.getElementById('outputSection');
   const outputContent = document.getElementById('outputContent');
 
+  // File status enum
+  const FileStatus = {
+    PENDING: 'pending',
+    PROCESSING: 'processing', 
+    COMPLETED: 'completed',
+    ERROR: 'error'
+  };
+
   // Bridge sanity check
   console.log('electronAPI available:', !!window.electronAPI);
   if (!window.electronAPI) {
-    alert('Electron bridge is not available. Some features may not work in browser mode.');
+    console.warn('Electron bridge is not available. Some features may not work in browser mode.');
   }
 
   // -------------------------------
@@ -131,8 +135,32 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // -------------------------------
-  // UI Helper Functions
+  // File Management
   // -------------------------------
+  function createFileObject(file) {
+    return {
+      file: file,
+      name: file.name || file.path || 'unknown.inp',
+      size: file.size || 0,
+      status: FileStatus.PENDING,
+      path: file.path || file.name
+    };
+  }
+
+  function removeFile(index) {
+    const fileObj = selectedInpFiles[index];
+    
+    // Don't allow removal if file is being processed
+    if (fileObj.status === FileStatus.PROCESSING) {
+      return;
+    }
+
+    selectedInpFiles.splice(index, 1);
+    updateFileDisplay();
+    updateCommandPreview();
+    updateRunButton();
+  }
+
   function updateFileDisplay() {
     if (!fileListEl) return;
     
@@ -141,34 +169,42 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     if (selectedInpFiles.length === 0) {
-      fileListEl.innerHTML = '<div style="opacity:0.8;text-align:center;">No .inp files found in selected directory</div>';
+      fileListEl.innerHTML = '<div style="opacity:0.8;text-align:center;">No .inp files selected</div>';
       return;
     }
     
-    const rows = selectedInpFiles.map(file => {
-      const name = typeof file === 'string' ? file.split(/[\\/]/).pop() : (file.name || file.path || 'input.inp');
-      const size = (typeof file === 'object' && typeof file.size === 'number') 
-        ? ` <span style="opacity:0.7">${(file.size / 1024).toFixed(1)} KB</span>` 
+    const rows = selectedInpFiles.map((fileObj, index) => {
+      const size = fileObj.size > 0 
+        ? ` <span style="opacity:0.7">${(fileObj.size / 1024).toFixed(1)} KB</span>` 
         : '';
-      return `<div class="file-item"><span>📄 ${name}</span>${size}</div>`;
+      
+      const statusIcon = {
+        [FileStatus.PENDING]: '📄',
+        [FileStatus.PROCESSING]: '⚙️',
+        [FileStatus.COMPLETED]: '✅',
+        [FileStatus.ERROR]: '❌'
+      }[fileObj.status];
+
+      const canRemove = fileObj.status !== FileStatus.PROCESSING;
+      const removeButton = canRemove 
+        ? `<div class="file-remove" onclick="removeFile(${index})">×</div>`
+        : `<div class="file-remove disabled">×</div>`;
+
+      return `
+        <div class="file-item">
+          <span>${statusIcon} ${fileObj.name}</span>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            ${size}
+            ${removeButton}
+          </div>
+        </div>`;
     });
     
     fileListEl.innerHTML = rows.join('');
   }
 
-  function updateBinaryStatus(isValid = false) {
-    if (!binaryStatus || !binaryStatusText) return;
-    
-    if (isValid) {
-      binaryStatus.className = 'status-indicator status-success';
-      binaryStatusText.textContent = 'Valid';
-      binaryStatusText.className = 'binary-status valid';
-    } else {
-      binaryStatus.className = 'status-indicator status-ready';
-      binaryStatusText.textContent = 'Not selected';
-      binaryStatusText.className = 'binary-status';
-    }
-  }
+  // Make removeFile available globally for onclick handlers
+  window.removeFile = removeFile;
 
   function updateCommandPreview() {
     if (!previewEl) return;
@@ -207,14 +243,11 @@ document.addEventListener('DOMContentLoaded', () => {
       
       // Sample command with first file
       const sampleFile = selectedInpFiles[0];
-      const sampleName = typeof sampleFile === 'string' 
-        ? sampleFile.split(/[\\/]/).pop() 
-        : (sampleFile.name || sampleFile.path || 'input.inp');
+      command += ` "${sampleFile.name}" "${outputPrefix}.out" ${iterations} ${thinning} ${burnin}`;
       
-      command += ` "${sampleName}" "${outputPrefix}.out" ${iterations} ${thinning} ${burnin}`;
-      
+      const parallelText = parallel === '0' ? 'Auto-detect' : parallel;
       if (selectedInpFiles.length > 1 && parallel !== '1') {
-        previewEl.innerHTML = `<strong>Will execute ${selectedInpFiles.length} files with ${parallel} parallel processes</strong>\n\nSample command:\n${command}`;
+        previewEl.innerHTML = `<strong>Will execute ${selectedInpFiles.length} files with ${parallelText} parallel processes</strong>\n\nSample command:\n${command}`;
       } else {
         previewEl.innerHTML = `<strong>Will execute ${selectedInpFiles.length} file(s) sequentially</strong>\n\nSample command:\n${command}`;
       }
@@ -243,6 +276,11 @@ document.addEventListener('DOMContentLoaded', () => {
       } else {
         buttonText.textContent = 'Run PHASE';
       }
+    }
+
+    // Show/hide stop button
+    if (stopBtn) {
+      stopBtn.style.display = isRunning ? 'inline-block' : 'none';
     }
   }
 
@@ -297,7 +335,6 @@ document.addEventListener('DOMContentLoaded', () => {
       if (result) {
         phaseBinaryPath = result;
         if (binPathInput) binPathInput.value = result;
-        updateBinaryStatus(true);
         updateCommandPreview();
         updateRunButton();
       }
@@ -307,30 +344,96 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Directory Selection
+  // File Selection
   btnChooseInp?.addEventListener('click', async () => {
     try {
-      if (!window.electronAPI?.selectDirectory) {
-        alert('Directory selection only works in the Electron app.');
-        return;
+      if (window.electronAPI?.selectInpFiles) {
+        // Use Electron file dialog
+        const result = await window.electronAPI.selectInpFiles();
+        if (result && result.length > 0) {
+          // Convert to file objects and add to existing files
+          const newFileObjects = result.map(fileInfo => ({
+            file: { name: fileInfo.name, path: fileInfo.path },
+            name: fileInfo.name,
+            size: fileInfo.size,
+            status: FileStatus.PENDING,
+            path: fileInfo.path
+          }));
+          selectedInpFiles = [...selectedInpFiles, ...newFileObjects];
+          
+          updateFileDisplay();
+          updateCommandPreview();
+          updateRunButton();
+        }
+      } else {
+        // Fall back to HTML file input for browser
+        if (fileInput) {
+          fileInput.click();
+        } else {
+          alert('File selection not available.');
+        }
       }
-      
-      const result = await window.electronAPI.selectDirectory();
-      if (!result) return;
-
-      selectedDirectory = result.directory || '';
-      selectedInpFiles = result.files || [];
-
-      if (inpDirInput) inpDirInput.value = selectedDirectory;
-
-      updateFileDisplay();
-      updateCommandPreview();
-      updateRunButton();
     } catch (error) {
-      console.error('Error selecting directory:', error);
-      alert('Failed to select input directory.');
+      console.error('Error selecting files:', error);
+      alert('Failed to select files.');
     }
   });
+
+  // Handle file input change (browser fallback)
+  fileInput?.addEventListener('change', function(e) {
+    const files = Array.from(e.target.files);
+    const inpFiles = files.filter(file => file.name.toLowerCase().endsWith('.inp'));
+    
+    if (inpFiles.length === 0) {
+      alert('Please select .inp files only.');
+      return;
+    }
+    
+    // Convert to file objects and add to existing files
+    const newFileObjects = inpFiles.map(createFileObject);
+    selectedInpFiles = [...selectedInpFiles, ...newFileObjects];
+    
+    updateFileDisplay();
+    updateCommandPreview();
+    updateRunButton();
+    
+    // Clear the input so the same files can be selected again if needed
+    e.target.value = '';
+  });
+
+  // Stop PHASE execution
+  window.stopPhase = async function() {
+    if (currentProcess && window.electronAPI?.stopPhase) {
+      try {
+        appendOutput('🛑 Stopping PHASE execution...', true);
+        
+        const result = await window.electronAPI.stopPhase();
+        
+        if (result.success) {
+          appendOutput('✅ PHASE execution stopped successfully', true);
+        } else {
+          appendOutput(`❌ Stop failed: ${result.message}`, true);
+        }
+        
+        // Reset file statuses
+        selectedInpFiles.forEach(fileObj => {
+          if (fileObj.status === FileStatus.PROCESSING) {
+            fileObj.status = FileStatus.PENDING;
+          }
+        });
+        
+        isRunning = false;
+        currentProcess = null;
+        updateRunButton();
+        updateFileDisplay();
+        hideProgress();
+        
+      } catch (error) {
+        console.error('Error stopping PHASE:', error);
+        appendOutput(`❌ Error stopping: ${error.message}`, true);
+      }
+    }
+  };
 
   // Run PHASE
   runBtn?.addEventListener('click', async () => {
@@ -342,7 +445,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     if (selectedInpFiles.length === 0) {
-      alert('Please select a directory containing .inp files first.');
+      alert('Please select .inp files first.');
       return;
     }
 
@@ -355,12 +458,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (outputContent) outputContent.innerHTML = '';
 
     try {
+      const parallelValue = document.getElementById('parallel')?.value || '4';
+      const actualParallelForConfig = parallelValue === '0' ? 'auto' : parseInt(parallelValue);
+
       const config = {
-        directory: selectedDirectory,
-        files: selectedInpFiles,
+        files: selectedInpFiles.map(obj => obj.file),
         phaseBinaryPath: phaseBinaryPath,
-        parallel: document.getElementById('parallel')?.value || '4',
-        randomSeed: document.getElementById('randomSeed')?.value || undefined,
+        parallel: actualParallelForConfig,
+        randomSeed: document.getElementById('randomSeed')?.value ? parseInt(document.getElementById('randomSeed').value) : undefined,
         iterations: document.getElementById('iterations')?.value || '100',
         burnin: document.getElementById('burnin')?.value || '100',
         thinning: document.getElementById('thinning')?.value || '1',
@@ -375,6 +480,12 @@ document.addEventListener('DOMContentLoaded', () => {
       console.log('Running PHASE with config:', config);
 
       if (window.electronAPI?.runPhase) {
+        // Set initial file statuses
+        selectedInpFiles.forEach(fileObj => {
+          fileObj.status = FileStatus.PROCESSING;
+        });
+        updateFileDisplay();
+
         // Set up real-time listeners
         const cleanupOutput = window.electronAPI.onPhaseOutput?.((data) => {
           appendOutput(data.trim());
@@ -391,19 +502,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
         updateProgress(10, 'Starting PHASE execution...');
         
-        const result = await window.electronAPI.runPhase(config);
+        currentProcess = await window.electronAPI.runPhase(config);
         
         // Cleanup listeners
         if (cleanupOutput) cleanupOutput();
         if (cleanupError) cleanupError();
         if (cleanupProgress) cleanupProgress();
         
+        // Mark all files as completed
+        selectedInpFiles.forEach(fileObj => {
+          fileObj.status = FileStatus.COMPLETED;
+        });
+        updateFileDisplay();
+        
         updateProgress(100, 'Completed successfully!');
         
         setTimeout(() => {
-          alert(`✅ EZ-PHASE analysis completed successfully!\n\n📊 Processed ${result.processedFiles} files\n📂 Output directory: ${result.outputDirectory}\n\nCheck the output directory for results and log files.`);
+          alert(`✅ EZ-PHASE analysis completed successfully!\n\n📊 Processed ${currentProcess.processedFiles} files\n📂 Output directory: ${currentProcess.outputDirectory}\n\nCheck the output directory for results and log files.`);
           hideProgress();
           isRunning = false;
+          currentProcess = null;
           updateRunButton();
         }, 1000);
         
@@ -425,6 +543,7 @@ document.addEventListener('DOMContentLoaded', () => {
               alert(`🎯 Demo completed!\n\nIn the full Electron app, this would execute:\n\n${selectedInpFiles.length} files with the configured parameters.\n\nGenerated commands are shown in the preview section.`);
               hideProgress();
               isRunning = false;
+              currentProcess = null;
               updateRunButton();
             }, 500);
           }
@@ -434,8 +553,18 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error('PHASE execution error:', error);
       appendOutput(`❌ Error: ${error.message}`, true);
       alert(`❌ Error:\n\n${error.message}\n\nPlease check your parameter settings.`);
+      
+      // Reset file statuses on error
+      selectedInpFiles.forEach(fileObj => {
+        if (fileObj.status === FileStatus.PROCESSING) {
+          fileObj.status = FileStatus.ERROR;
+        }
+      });
+      updateFileDisplay();
+      
       hideProgress();
       isRunning = false;
+      currentProcess = null;
       updateRunButton();
     }
   });
@@ -444,11 +573,9 @@ document.addEventListener('DOMContentLoaded', () => {
   window.resetForm = function() {
     document.getElementById('phaseForm')?.reset();
     selectedInpFiles = [];
-    selectedDirectory = '';
     phaseBinaryPath = '';
     
     if (binPathInput) binPathInput.value = '';
-    if (inpDirInput) inpDirInput.value = '';
     
     // Reset default values
     const iterations = document.getElementById('iterations');
@@ -456,19 +583,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const thinning = document.getElementById('thinning');
     const outputPrefix = document.getElementById('outputPrefix');
     const verbose = document.getElementById('verbose');
+    const parallel = document.getElementById('parallel');
     
     if (iterations) iterations.value = '100';
     if (burnin) burnin.value = '100';
     if (thinning) thinning.value = '1';
     if (outputPrefix) outputPrefix.value = 'phase_output';
     if (verbose) verbose.checked = true;
+    if (parallel) parallel.value = '4';
     
-    updateBinaryStatus(false);
     updateFileDisplay();
     updateCommandPreview();
     updateRunButton();
     hideProgress();
     hideOutput();
+    
+    // Stop any running process
+    if (isRunning) {
+      window.stopPhase();
+    }
   };
 
   // Real-time command preview updates
@@ -482,7 +615,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initialize
   // -------------------------------
   initAdvancedUI();
-  updateBinaryStatus(false);
   updateFileDisplay();
   updateCommandPreview();
   updateRunButton();

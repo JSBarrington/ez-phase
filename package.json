@@ -1,47 +1,111 @@
 {
   "name": "ez-phase",
-  "version": "1.0.0",
-  "description": "EZ-PHASE: User-Friendly GUI Wrapper for PHASE 2.1.1 Haplotype Phasing",
+  "version": "1.10.0",
+  "description": "Easy Haplotype Phasing - Advanced GUI for PHASE 2.1.1 with Enhanced File Management and Parallel Processing",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "build": { "mac": { "icon": "build/icon.icns" } },
+    "dev": "electron . --inspect",
     "build-mac": "electron-builder --mac",
-    "dist": "electron-builder --publish=never"
+    "build-win": "electron-builder --win",
+    "build-linux": "electron-builder --linux",
+    "dist": "electron-builder --publish=never",
+    "build-all": "electron-builder --mac --win --linux",
+    "pack": "electron-builder --dir",
+    "postinstall": "electron-builder install-app-deps",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": ["ez-phase", "phase", "haplotype", "phasing", "bioinformatics", "gui"],
-  "author": "Jesse S. Barrington",
+  "keywords": [
+    "bioinformatics",
+    "haplotype",
+    "phasing",
+    "genetics",
+    "PHASE",
+    "population-genetics",
+    "gui",
+    "electron",
+    "genomics",
+    "linkage-disequilibrium",
+    "bayesian-inference"
+  ],
+  "author": "Jesse S. Barrington <jsbarrington@github.com>",
   "license": "MIT",
+  "homepage": "https://github.com/JSBarrington/ez-phase",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JSBarrington/ez-phase.git"
+  },
+  "bugs": {
+    "url": "https://github.com/JSBarrington/ez-phase/issues"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
   "devDependencies": {
     "electron": "^28.0.0",
     "electron-builder": "^24.0.0"
   },
-  "dependencies": {
-    "child_process": "^1.0.2",
-    "fs-extra": "^11.0.0",
-    "path": "^0.12.7"
-  },
   "build": {
-    "appId": "jesse.barrington@gmail.com",
+    "appId": "com.jsbarrington.ez-phase",
     "productName": "EZ-PHASE",
+    "copyright": "Copyright © 2024 Jesse S. Barrington",
     "directories": {
       "output": "dist"
     },
     "files": [
       "**/*",
-      "!dist",
-      "!node_modules",
+      "!docs/**/*",
+      "!.github/**/*",
+      "!README.md",
+      "!dist/**/*",
+      "!node_modules/.cache/**/*",
       "!*.log"
     ],
+    "extraResources": [
+      {
+        "from": "assets/",
+        "to": "assets/",
+        "filter": ["**/*"]
+      }
+    ],
     "mac": {
-      "category": "public.app-category.developer-tools",
       "icon": "assets/icon.icns",
+      "category": "public.app-category.education",
       "target": [
         {
           "target": "dmg",
           "arch": ["x64", "arm64"]
         }
-      ]
+      ],
+      "entitlements": null,
+      "entitlementsInherit": null
+    },
+    "win": {
+      "icon": "assets/icon.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "publisherName": "Jesse S. Barrington"
+    },
+    "linux": {
+      "icon": "assets/icon.png",
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": ["x64"]
+        }
+      ],
+      "category": "Science",
+      "maintainer": "Jesse S. Barrington <jsbarrington@github.com>"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
     }
   }
 }

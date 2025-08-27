@@ -3,9 +3,11 @@ const { contextBridge, ipcRenderer } = require('electron');
 // Expose protected methods that allow the renderer process to use
 // the ipcRenderer without exposing the entire object
 contextBridge.exposeInMainWorld('electronAPI', {
-  selectDirectory:   () => ipcRenderer.invoke('select-directory'),
+  selectInpFiles:    () => ipcRenderer.invoke('select-inp-files'),
   selectPhaseBinary: () => ipcRenderer.invoke('select-phase-binary'),
+  autoDetectPhase:   () => ipcRenderer.invoke('auto-detect-phase'),
   runPhase:          (payload) => ipcRenderer.invoke('run-phase', payload),
+  stopPhase:         () => ipcRenderer.invoke('stop-phase'),
   getAppVersion:     () => ipcRenderer.invoke('get-app-version'),
 
   // Live events with proper cleanup functions

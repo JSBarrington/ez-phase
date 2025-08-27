@@ -6,33 +6,19 @@
     <title>EZ-PHASE - Easy Haplotype Phasing</title>
     <style>
         :root {
-            /* Background */
-            --color-background: #E5EEDC;   /* soft sage green */
+            --color-background: #E5EEDC;
             --primary-gradient-start: #E5EEDC;
-            --primary-gradient-end:   #D6E5C6;
-
-            /* Primary text & accents */
-            --color-primary: #1E3C43;       /* dark teal */
-            --color-primary-light: #305D57; /* lighter teal */
-
-            /* Secondary accents */
-            --color-accent-red:  #B53A3A;   /* muted academic red */
-            --color-accent-blue: #1E3C43;   /* reuse teal */
-
-            /* Special effects */
-            --color-arrow-fade-start: #1E3C43;
-            --color-arrow-fade-end:   #000000;
-
-            /* DNA Helix */
-            --color-helix-black: #000000;
-    
-            /* Neutral text */
-            --color-text:       #1E3C43;
+            --primary-gradient-end: #D6E5C6;
+            --color-primary: #1E3C43;
+            --color-primary-light: #305D57;
+            --color-accent-red: #B53A3A;
+            --color-accent-blue: #1E3C43;
+            --color-text: #1E3C43;
             --color-text-light: #FFFFFF;
-            --color-card: #ffffff;                 /* card & section background */
-            --color-input-bg: #ffffff;             /* input background */
-            --color-input-border: #DDE7DE;         /* sage-tinted light border */
-            --color-muted: #5d6b6b;                /* subtle text (hints, placeholders) */
+            --color-card: #ffffff;
+            --color-input-bg: #ffffff;
+            --color-input-border: #DDE7DE;
+            --color-muted: #5d6b6b;
         }
 
         * {
@@ -63,16 +49,25 @@
             margin-bottom: 30px;
         }
 
+        .app-logo {
+            width: 192px;
+            height: 192px;
+            border-radius: 20px;
+            display: block;
+            margin: 0 auto 20px;
+            box-shadow: 0 8px 24px color-mix(in oklab, var(--color-primary) 30%, transparent);
+        }
+
         .header h1 {
             color: var(--color-primary);
-            font-size: 2.5em;
+            font-size: 3em;
             font-weight: 300;
             margin-bottom: 10px;
         }
 
         .header p {
             color: var(--color-primary-light);
-            font-size: 1.1em;
+            font-size: 1.2em;
         }
 
         .form-grid {
@@ -126,22 +121,6 @@
             border-color: var(--color-primary);
             box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-primary) 18%, transparent);
             transform: translateY(-2px);
-        }
-
-        .form-group input::placeholder {
-            color: var(--color-muted);
-            opacity: 0.9;
-        }
-        
-        .form-group input:disabled, .form-group select:disabled {
-            background: #f1f5f3;
-            color: color-mix(in oklab, var(--color-text) 60%, white);
-            cursor: not-allowed;
-        }
-
-        .form-group input[aria-invalid="true"], .form-group select[aria-invalid="true"], .form-group .is-invalid {
-            border-color: var(--color-accent-red);
-            box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-accent-red) 18%, transparent);
         }
 
         .checkbox-group {
@@ -213,6 +192,32 @@
             align-items: center;
         }
 
+        .file-remove {
+            background: rgba(255, 255, 255, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+            transition: all 0.2s ease;
+        }
+
+        .file-remove:hover {
+            background: rgba(183, 58, 58, 0.8);
+            border-color: rgba(183, 58, 58, 1);
+        }
+
+        .file-remove.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
         .command-preview {
             grid-column: 1 / -1;
             background: #1a2b2f;
@@ -275,12 +280,22 @@
         }
 
         .btn-secondary {
-            background: #000000;
+            background: #95a5a6;
             color: var(--color-text-light);
         }
 
         .btn-secondary:hover:not(:disabled) {
-            background: #111111;
+            background: #7f8c8d;
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: var(--color-accent-red);
+            color: var(--color-text-light);
+        }
+
+        .btn-danger:hover:not(:disabled) {
+            background: #a02a2a;
             transform: translateY(-2px);
         }
 
@@ -342,6 +357,7 @@
             background: #2c3e50;
             border-radius: 10px;
             overflow: hidden;
+            max-height: 300px;
         }
 
         .output-header {
@@ -381,20 +397,6 @@
             50% { opacity: 0.5; }
         }
 
-        .binary-status {
-            margin-left: 10px;
-            font-size: 0.8em;
-            color: #7f8c8d;
-        }
-
-        .binary-status.valid {
-            color: #27ae60;
-        }
-
-        .binary-status.invalid {
-            color: #e74c3c;
-        }
-
         .inline {
             display: flex;
             gap: 8px;
@@ -406,16 +408,23 @@
             color: #666;
             margin-top: 4px;
         }
-        
-        .app-logo {
-            width: 72px; 
-            height: 72px;
-            border-radius: 16px;
-            display: block;
-            margin: 0 auto 10px;
-            box-shadow: 0 6px 18px color-mix(in oklab, var(--color-primary) 25%, transparent);
+
+        .link-hint {
+            font-size: 0.8em;
+            color: rgba(255,255,255,0.8);
+            margin-top: 8px;
         }
-        
+
+        .link-hint a {
+            color: rgba(255,255,255,0.9);
+            text-decoration: none;
+        }
+
+        .link-hint a:hover {
+            color: white;
+            text-decoration: underline;
+        }
+
         @media (max-width: 768px) {
             .form-grid {
                 grid-template-columns: 1fr;
@@ -429,6 +438,11 @@
             .header h1 {
                 font-size: 2em;
             }
+
+            .app-logo {
+                width: 80px;
+                height: 80px;
+            }
         }
     </style>
 </head>
@@ -436,8 +450,7 @@
     <div class="container">
         <div class="header">
             <img class="app-logo" src="./assets/icon.png" alt="EZ-PHASE logo">
-            <h1>EZ-PHASE</h1>
-            <p>Easy Haplotype Phasing - GUI for PHASE 2.1.1</p>
+            <p>Easy Phasing - Haplotype Reconstruction in Parallel</p>
         </div>
 
         <form id="phaseForm">
@@ -449,9 +462,7 @@
                     <!-- PHASE Binary Selection -->
                     <div class="form-group" style="margin-bottom: 25px;">
                         <label style="color: white;">
-                            <span class="status-indicator" id="binaryStatus"></span>
                             PHASE Binary Location
-                            <span class="binary-status" id="binaryStatusText">Not selected</span>
                         </label>
                         <div style="display: flex; gap: 10px; margin-bottom: 10px;">
                             <input type="text" id="phaseBinPath" placeholder="Select PHASE executable..." readonly 
@@ -461,23 +472,22 @@
                                 Browse
                             </button>
                         </div>
-                        <div class="hint" style="color: rgba(255,255,255,0.8); font-size: 0.85em; margin-top: 8px;">
-                            💡 Download PHASE 2.1.1 from the <a href="http://stephenslab.uchicago.edu/phase/download.html" target="_blank" style="color: rgba(255,255,255,0.9);">Stephens Lab website</a>
+                        <div class="link-hint">
+                            💡 Download PHASE 2.1.1 from the <a href="http://stephenslab.uchicago.edu/phase/download.html" target="_blank">Stephens Lab website</a>
                         </div>
                     </div>
                     
-                    <!-- Directory Selection -->
+                    <!-- File Selection -->
                     <div class="file-picker" id="filePickerDiv">
                         <div class="file-picker-content">
-                            <div class="file-icon">📂</div>
+                            <div class="file-icon">📄</div>
                             <div>
-                                <strong>Select Directory</strong>
-                                <br>Choose folder containing .inp files
+                                <strong>Select .inp Files</strong>
+                                <br>Choose one or more PHASE input files
                             </div>
                         </div>
                     </div>
-                    <input type="text" id="inputDirPath" placeholder="Selected directory path..." readonly 
-                           style="width: 100%; background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 8px; padding: 10px; margin-bottom: 10px;">
+                    <input type="file" id="fileInput" multiple accept=".inp" style="display: none;">
                     
                     <div id="selectedFiles" class="selected-files" style="display: none;">
                         <h4>Selected .inp Files:</h4>
@@ -515,9 +525,14 @@
                             <span class="tooltip" data-tooltip="How many PHASE processes to run concurrently">ℹ️</span>
                         </label>
                         <select id="parallel" name="parallel">
-                            <option value="1">Single Process</option>
+                            <option value="0">Auto-detect</option>
+                            <option value="1">1 Process</option>
                             <option value="2">2 Processes</option>
+                            <option value="3">3 Processes</option>
                             <option value="4" selected>4 Processes</option>
+                            <option value="5">5 Processes</option>
+                            <option value="6">6 Processes</option>
+                            <option value="7">7 Processes</option>
                             <option value="8">8 Processes</option>
                         </select>
                     </div>
@@ -541,8 +556,9 @@
                             <option value="MR4">Constant rate, fixed (-MR4 + -R)</option>
                         </select>
                         <div class="hint">
-                            MR0: Li–Stephens; MR1: estimates one hotspot; MR2: one or two user-specified hotspot intervals; MR3: constant (estimated);
-                            MR4: constant (fixed, requires <code>-R</code>).
+                            <strong>MR0:</strong> <a href="https://stephenslab.uchicago.edu/assets/software/phase/instruct2.1.pdf" target="_blank" style="color: inherit;">Li–Stephens</a>; 
+                            <strong>MR1:</strong> estimates one hotspot; <strong>MR2:</strong> one or two user-specified hotspot intervals; 
+                            <strong>MR3:</strong> constant (estimated); <strong>MR4:</strong> constant (fixed, requires <code>-R</code>).
                         </div>
                     </div>
 
@@ -585,22 +601,31 @@
                             Individuals for recombination estimation (-N)
                             <span class="tooltip" data-tooltip="PHASE uses 100 by default when estimating recombination. Set to override">ℹ️</span>
                         </label>
-                        <input id="Ncap" type="number" min="1" placeholder="(optional)">
+                        <input id="Ncap" type="number" min="1" placeholder="(optional, default: 100)">
+                        <div class="hint">
+                            PHASE uses up to 100 individuals (randomly chosen) for recombination rate estimation by default. 
+                            Computation increases quadratically with more individuals. Override only if needed for accuracy.
+                        </div>
                     </div>
 
                     <!-- Mutation model (-d) -->
                     <div class="form-group">
                         <label for="dmodel">
                             Multi-allelic mutation model (-d)
-                            <span class="tooltip" data-tooltip="-d1 = PIM; blank = stepwise (default). Or provide a δ-file path">ℹ️</span>
+                            <span class="tooltip" data-tooltip="Controls mutation assumptions for microsatellites and multi-allelic loci">ℹ️</span>
                         </label>
                         <select id="dmodel" name="dmodel">
                             <option value="">Stepwise (default)</option>
-                            <option value="1">Parent-Independent (PIM) – adds -d1</option>
-                            <option value="file">From δ-file – adds -d&lt;file&gt;</option>
+                            <option value="1">Parent-Independent (PIM) — adds -d1</option>
+                            <option value="file">From δ-file — adds -d&lt;file&gt;</option>
                         </select>
                         <div id="deltaFileWrap" class="inline" style="display:none;margin-top:6px;">
                             <input id="deltaFile" type="text" placeholder="Path to δ-file (e.g., /path/to/delta.txt)">
+                        </div>
+                        <div class="hint">
+                            <strong>Stepwise:</strong> microsatellites change by ±1 repeat (default); 
+                            <strong>PIM:</strong> mutations to any allele (tri-allelic SNPs, HLA); 
+                            <strong>δ-file:</strong> custom per-locus mutation parameters (0=stepwise, 1=PIM).
                         </div>
                     </div>
 
@@ -648,6 +673,7 @@
 
             <div class="buttons">
                 <button type="button" class="btn btn-secondary" onclick="resetForm()">Reset</button>
+                <button type="button" class="btn btn-danger" id="stopBtn" onclick="stopPhase()" style="display: none;">Stop</button>
                 <button type="button" class="btn btn-primary" id="runBtn">
                     <span id="runButtonText">Run PHASE</span>
                 </button>
