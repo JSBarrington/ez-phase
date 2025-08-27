@@ -61,30 +61,21 @@ function generateRandomSeed() {
   return Math.floor(Math.random() * 999999) + 1;
 }
 
-// ---------- IPC: Pick individual .inp files ----------
+// ---------- IPC Handlers ----------
 ipcMain.handle('select-inp-files', async () => {
   if (!mainWindow) return null;
   const result = await dialog.showOpenDialog(mainWindow, {
     properties: ['openFile', 'multiSelections'],
     title: 'Select PHASE input files',
-    filters: [
-      { name: 'PHASE Input Files', extensions: ['inp'] },
-      { name: 'All Files', extensions: ['*'] }
-    ]
+    filters: [{ name: 'PHASE Input Files', extensions: ['inp'] }, { name: 'All Files', extensions: ['*'] }]
   });
-  
   if (result.canceled || !result.filePaths?.length) return null;
-
   try {
     return await Promise.all(
       result.filePaths.map(async (filePath) => {
         const name = path.basename(filePath);
-        try {
-          const st = await fsp.stat(filePath);
-          return { name, path: filePath, size: st.size };
-        } catch {
-          return { name, path: filePath, size: 0 };
-        }
+        const st = await fsp.stat(filePath);
+        return { name, path: filePath, size: st.size };
       })
     );
   } catch (err) {
@@ -93,7 +84,6 @@ ipcMain.handle('select-inp-files', async () => {
   }
 });
 
-// ---------- IPC: Pick PHASE binary ----------
 ipcMain.handle('select-phase-binary', async () => {
   if (!mainWindow) return null;
   const result = await dialog.showOpenDialog(mainWindow, {
@@ -102,9 +92,7 @@ ipcMain.handle('select-phase-binary', async () => {
     filters: [{ name: 'All Files', extensions: ['*'] }],
   });
   if (result.canceled || !result.filePaths?.length) return null;
-
   const selectedPath = result.filePaths[0];
-  
   if (!isExecutable(selectedPath) && process.platform !== 'win32') {
     try {
       await fsp.chmod(selectedPath, 0o755);
@@ -112,26 +100,9 @@ ipcMain.handle('select-phase-binary', async () => {
       console.warn('Could not make file executable:', e.message); 
     }
   }
-  
   return selectedPath;
 });
 
-// ---------- Validation before run ----------
-async function validateConfig(config) {
-  const { files, phaseBinaryPath } = config;
-  if (!phaseBinaryPath) throw new Error('PHASE binary path not specified');
-  try { await fsp.access(phaseBinaryPath); } catch { throw new Error(`PHASE binary not found at: ${phaseBinaryPath}`); }
-  if (!isExecutable(phaseBinaryPath)) throw new Error(`PHASE binary is not executable: ${phaseBinaryPath}`);
-  if (!files || !files.length) throw new Error('No input files specified');
-  
-  for (const file of files) {
-    const filePath = file.path || file.name;
-    if (!filePath) throw new Error('Invalid file object - missing path');
-    try { await fsp.access(filePath); } catch { throw new Error(`Input file not found: ${filePath}`); }
-  }
-}
-
-// ---------- Build and run ----------
 ipcMain.handle('run-phase', async (_evt, config) => {
   try { 
     await validateConfig(config); 
@@ -142,7 +113,6 @@ ipcMain.handle('run-phase', async (_evt, config) => {
   }
 });
 
-// ---------- Stop PHASE process ----------
 ipcMain.handle('stop-phase', async () => {
   if (currentPhaseProcess && !currentPhaseProcess.killed) {
     try {
@@ -157,10 +127,23 @@ ipcMain.handle('stop-phase', async () => {
   return { success: false, message: 'No active process to stop.' };
 });
 
+async function validateConfig(config) {
+  const { files, phaseBinaryPath } = config;
+  if (!phaseBinaryPath) throw new Error('PHASE binary path not specified');
+  try { await fsp.access(phaseBinaryPath); } catch { throw new Error(`PHASE binary not found at: ${phaseBinaryPath}`); }
+  if (!isExecutable(phaseBinaryPath)) throw new Error(`PHASE binary is not executable: ${phaseBinaryPath}`);
+  if (!files || !files.length) throw new Error('No input files specified');
+  for (const file of files) {
+    const filePath = file.path || file.name;
+    if (!filePath) throw new Error('Invalid file object - missing path');
+    try { await fsp.access(filePath); } catch { throw new Error(`Input file not found: ${filePath}`); }
+  }
+}
+
 async function executePhase(config) {
   const { files, phaseBinaryPath, parallel = 4, randomSeed, iterations = 100, burnin = 100, thinning = 1, outputPrefix = 'phase_output', advancedArgs = [], options = {} } = config;
   const parallelNum = parseInt(parallel) || 4;
-  const actualParallel = parallel === 'auto' || parallelNum === 0 ? Math.min(files.length, os.cpus().length) : Math.min(parallelNum, 8);
+  const actualParallel = parallel === 'auto' || parallelNum === 0 ? os.cpus().length : Math.min(parallelNum, os.cpus().length);
   const firstFilePath = files[0].path || files[0].name;
   const outputDir = path.join(path.dirname(firstFilePath), 'ez_phase_output');
   await fsp.mkdir(outputDir, { recursive: true });
@@ -170,16 +153,16 @@ async function executePhase(config) {
   await fsp.writeFile(scriptPath, scriptContent, { mode: 0o755 });
 
   return new Promise((resolve, reject) => {
-    currentPhaseProcess = spawn('bash', [scriptPath], { cwd: path.dirname(firstFilePath), stdio: ['ignore', 'pipe', 'pipe'], detached: true });
+    currentPhaseProcess = spawn('bash', [scriptPath], { cwd: outputDir, stdio: ['ignore', 'pipe', 'pipe'], detached: true });
 
     let processedFiles = 0;
-    const totalFiles = files.length;
+    const totalFiles = files.length * actualParallel; // Total jobs to run
 
     currentPhaseProcess.stdout.on('data', (buf) => {
       const chunk = buf.toString();
       if (chunk.includes('SUCCESS:')) {
         processedFiles++;
-        const progress = Math.max(0, Math.min(100, Math.round((processedFiles / totalFiles) * 100)));
+        const progress = Math.min(100, Math.round((processedFiles / totalFiles) * 100));
         mainWindow?.webContents?.send('phase-progress', { progress, processedFiles, totalFiles });
       }
       mainWindow?.webContents?.send('phase-output', chunk);
@@ -204,7 +187,7 @@ async function executePhase(config) {
   });
 }
 
-// THIS IS THE CORRECTED, ORIGINAL SCRIPT GENERATION LOGIC
+// RESTORED ORIGINAL, ELEGANT, AND DEPENDENCY-FREE SCRIPT LOGIC
 function generatePhaseScript(cfg) {
   const { files, phaseBinaryPath, outputDir, outputPrefix, iterations, burnin, thinning, advancedArgs = [], options = {}, randomSeed, parallel = 4 } = cfg;
   const logFile = path.join(outputDir, 'phase_execution.log');
@@ -229,22 +212,21 @@ job_count=0
   for (const file of files) {
     const filePath = file.path || file.name;
     const baseName = path.basename(filePath, '.inp');
-    
     const seedsForFile = Array.from({length: parallel}, (_, i) => baseSeed + i);
 
     for (const seed of seedsForFile) {
       const outputFilePath = path.join(outputDir, `${outputPrefix}_${baseName}_seed${seed}.out`);
-      
-      // Using double quotes to handle paths with spaces safely
       const command = `"${phaseBinaryPath}" -S${seed} ${optionsString} "${filePath}" "${outputFilePath}" ${iterations} ${thinning} ${burnin}`;
 
       script += `
-echo "Processing: ${baseName} with seed ${seed}"
-if ${command} >> "${logFile}" 2>&1; then
-  echo "SUCCESS: ${baseName} with seed ${seed}"
-else
-  echo "ERROR: ${baseName} with seed ${seed}. See log for details."
-fi &
+(
+  echo "Processing: ${baseName} with seed ${seed}"
+  if ${command} >> "${logFile}" 2>&1; then
+    echo "SUCCESS: ${baseName} with seed ${seed}"
+  else
+    echo "ERROR: ${baseName} with seed ${seed}. See log for details."
+  fi
+) &
 job_count=$((job_count + 1))
 if [ $((job_count % ${parallel})) -eq 0 ]; then
   wait
@@ -262,4 +244,3 @@ echo "All jobs completed."
 
 // App version
 ipcMain.handle('get-app-version', () => app.getVersion());
-
