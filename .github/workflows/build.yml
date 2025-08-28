@@ -1,6 +1,11 @@
 # .github/workflows/build.yml
 name: Build and Release EZ-PHASE
 
+permissions:
+  contents: write
+  packages: write
+  releases: write
+
 on:
   push:
     branches: [ main, develop ]
