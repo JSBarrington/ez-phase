@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   selectInpFiles:    () => ipcRenderer.invoke('select-inp-files'),
   selectPhaseBinary: () => ipcRenderer.invoke('select-phase-binary'),
   autoDetectPhase:   () => ipcRenderer.invoke('auto-detect-phase'),
+  getProcessingInfo: () => ipcRenderer.invoke('get-processing-info'),
   runPhase:          (payload) => ipcRenderer.invoke('run-phase', payload),
   stopPhase:         () => ipcRenderer.invoke('stop-phase'),
   getAppVersion:     () => ipcRenderer.invoke('get-app-version'),
