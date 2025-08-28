@@ -1,6 +1,6 @@
 {
   "name": "ez-phase",
-  "version": "1.10.0",
+  "version": "1.1.2",
   "description": "Easy Haplotype Phasing - Advanced GUI for PHASE 2.1.1 with Enhanced File Management and Parallel Processing",
   "main": "main.js",
   "scripts": {
@@ -25,7 +25,7 @@
   "build": {
     "appId": "com.jsbarrington.ez-phase",
     "productName": "EZ-PHASE",
-    "copyright": "Copyright © 2024 Jesse S. Barrington",
+    "copyright": "Copyright © 2025 Jesse S. Barrington",
     "directories": {
       "output": "dist",
       "buildResources": "resources"
