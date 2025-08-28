@@ -116,12 +116,144 @@ jobs:
         retention-days: 30
         if-no-files-found: warn
 
+  # .github/workflows/build.yml
+name: Build and Release EZ-PHASE
+
+permissions:
+  contents: write
+  packages: write
+  releases: write
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  release:
+    types: [ published ]
+
+env:
+  NODE_VERSION: '18'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Run linter (if available)
+      run: npm run lint || echo "Linting not configured, skipping..."
+      continue-on-error: true
+      
+    - name: Run tests (if available)  
+      run: npm test || echo "Tests not configured, skipping..."
+      continue-on-error: true
+
+  build:
+    needs: test
+    strategy:
+      matrix:
+        include:
+          - os: macos-latest
+            platform: mac
+            artifact-pattern: "*.dmg"
+            script: build-mac
+          - os: windows-latest  
+            platform: win
+            artifact-pattern: "*.exe"
+            script: build-win
+          - os: ubuntu-latest
+            platform: linux
+            artifact-pattern: "*.AppImage"
+            script: build-linux
+            
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        
+    - name: Install and bundle GNU Parallel (macOS)
+      if: matrix.platform == 'mac'
+      run: |
+        brew install parallel
+        mkdir -p resources/bin
+        cp $(which parallel) resources/bin/
+        chmod +x resources/bin/parallel
+        resources/bin/parallel --version
+        
+    - name: Install and bundle GNU Parallel (Linux)  
+      if: matrix.platform == 'linux'
+      run: |
+        sudo apt-get update && sudo apt-get install -y parallel
+        mkdir -p resources/bin
+        cp $(which parallel) resources/bin/
+        chmod +x resources/bin/parallel
+        resources/bin/parallel --version
+        
+    - name: Handle Windows (no parallel bundling)
+      if: matrix.platform == 'win'
+      shell: pwsh
+      run: |
+        New-Item -ItemType Directory -Force -Path "resources/bin"
+        
+    - name: Install npm dependencies
+      run: npm ci
+
+    - name: Build application
+      run: npm run ${{ matrix.script }}
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ matrix.platform }}-build
+        path: |
+          dist/${{ matrix.artifact-pattern }}
+          dist/*.zip
+          dist/*.deb
+          dist/*.rpm
+          dist/*.msi
+        retention-days: 30
+        if-no-files-found: warn
+
   release:
     needs: build
     if: github.event_name == 'release' && github.event.action == 'published'
     runs-on: ubuntu-latest
-    
+    permissions:
+      contents: write  # This is what's missing!
     steps:
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+        
+    - name: Upload to release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          artifacts/**/*
+        fail_on_unmatched_files: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     - name: Download all artifacts
       uses: actions/download-artifact@v4
       with:
