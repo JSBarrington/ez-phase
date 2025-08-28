@@ -5,6 +5,8 @@ permissions:
   contents: write
   packages: write
   releases: write
+  pull-requests: write
+  deployments: write
 
 <<<<<<< HEAD
 =======
