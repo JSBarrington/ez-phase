@@ -30,9 +30,9 @@
     "productName": "EZ-PHASE",
     "copyright": "Copyright © 2024 Jesse S. Barrington",
     "directories": {
-      "output": "dist"
+      "output": "dist",
+      "buildResources": "resources"
     },
-    "buildResources": "resources",
     "files": [
       "**/*",
       "!dist/**/*",
