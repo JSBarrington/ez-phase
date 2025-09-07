@@ -27,8 +27,6 @@ function createWindow() {
 
   mainWindow.loadFile('index.html');
   mainWindow.once('ready-to-show', () => mainWindow?.show());
-  // Toggle for development:
-  // if (process.env.NODE_ENV === 'development') mainWindow.webContents.openDevTools();
 }
 
 app.whenReady().then(() => {
@@ -244,3 +242,7 @@ echo "All jobs completed."
 `;
   return script;
 }
+
+// App version
+ipcMain.handle('get-app-version', () => app.getVersion());
+
