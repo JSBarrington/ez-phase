@@ -244,4 +244,3 @@ echo "All jobs completed."
 
 // App version
 ipcMain.handle('get-app-version', () => app.getVersion());
-
