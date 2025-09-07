@@ -160,7 +160,6 @@ async function executePhase(config) {
 
     currentPhaseProcess.stdout.on('data', (buf) => {
       const chunk = buf.toString();
-      // Simple progress tracking by counting success messages from the script
       if (chunk.includes('SUCCESS:')) {
         successCount++;
         const progress = Math.min(100, Math.round((successCount / totalJobs) * 100));
