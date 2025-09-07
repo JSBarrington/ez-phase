@@ -1,9 +1,9 @@
-// main.js — EZ-PHASE v1.1.0 with enhanced dependency management and process handling
+// main.js – EZ-PHASE Final Build
 const { app, BrowserWindow, dialog, ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const fsp = require('fs/promises');
-const { spawn, execSync } = require('child_process');
+const { spawn } = require('child_process');
 const os = require('os');
 
 let mainWindow;
@@ -27,7 +27,8 @@ function createWindow() {
 
   mainWindow.loadFile('index.html');
   mainWindow.once('ready-to-show', () => mainWindow?.show());
-  if (process.env.NODE_ENV === 'development') mainWindow.webContents.openDevTools();
+  // Toggle for development:
+  // if (process.env.NODE_ENV === 'development') mainWindow.webContents.openDevTools();
 }
 
 app.whenReady().then(() => {
@@ -41,64 +42,14 @@ app.whenReady().then(() => {
 app.on('window-all-closed', () => {
   if (currentPhaseProcess) {
     try {
+      // Kill the entire process group on exit
       process.kill(-currentPhaseProcess.pid, 'SIGKILL');
     } catch (e) {
-      console.log('Error killing process on exit:', e.message);
+      // Ignore errors if the process is already gone
     }
   }
   if (process.platform !== 'darwin') app.quit();
 });
-
-// ---------- Enhanced Dependency Detection ----------
-function detectParallelCommand() {
-  const possibilities = [
-    // Bundled parallel (highest priority)
-    path.join(process.resourcesPath, 'bin', 'parallel'),
-    path.join(__dirname, 'resources', 'bin', 'parallel'), // Development mode
-    
-    // System parallel (fallback)
-    'parallel'
-  ];
-
-  for (const cmd of possibilities) {
-    try {
-      if (path.isAbsolute(cmd)) {
-        // Check if bundled binary exists and is executable
-        if (fs.existsSync(cmd)) {
-          fs.accessSync(cmd, fs.constants.X_OK);
-          console.log(`Found bundled parallel: ${cmd}`);
-          return cmd;
-        }
-      } else {
-        // Check if system parallel is available (Unix only)
-        if (process.platform !== 'win32') {
-          execSync(`which ${cmd}`, { stdio: 'ignore' });
-          console.log(`Found system parallel: ${cmd}`);
-          return cmd;
-        }
-      }
-    } catch (e) {
-      // Try next option
-      continue;
-    }
-  }
-  
-  console.log('GNU Parallel not found - will use sequential processing');
-  return null;
-}
-
-function getProcessingCapabilities() {
-  const parallelCommand = detectParallelCommand();
-  const maxParallel = os.cpus().length;
-  
-  return {
-    hasParallel: !!parallelCommand,
-    parallelCommand,
-    maxParallel,
-    recommendedParallel: Math.min(4, maxParallel),
-    processingMode: parallelCommand ? 'parallel' : 'sequential'
-  };
-}
 
 // ---------- Utilities ----------
 function isExecutable(filePath) {
@@ -147,29 +98,20 @@ ipcMain.handle('select-phase-binary', async () => {
   if (!isExecutable(selectedPath) && process.platform !== 'win32') {
     try {
       await fsp.chmod(selectedPath, 0o755);
-    } catch (e) { 
-      console.warn('Could not make file executable:', e.message); 
+    } catch (e) {
+      console.warn('Could not make file executable:', e.message);
     }
   }
   return selectedPath;
 });
 
-ipcMain.handle('auto-detect-phase', async () => {
-  return null;
-});
-
-// Handler to report processing capabilities to renderer
-ipcMain.handle('get-processing-info', async () => {
-  return getProcessingCapabilities();
-});
-
 ipcMain.handle('run-phase', async (_evt, config) => {
-  try { 
-    await validateConfig(config); 
-    return await executePhase(config); 
-  } catch (err) { 
-    console.error('PHASE execution error:', err); 
-    throw err; 
+  try {
+    await validateConfig(config);
+    return await executePhase(config);
+  } catch (err) {
+    console.error('PHASE execution error:', err);
+    throw err;
   }
 });
 
@@ -178,7 +120,7 @@ ipcMain.handle('stop-phase', async () => {
     try {
       process.kill(-currentPhaseProcess.pid, 'SIGTERM');
       currentPhaseProcess = null;
-      return { success: true, message: 'PHASE process stopped' };
+      return { success: true, message: 'PHASE process signaled to stop.' };
     } catch (error) {
       console.error('Failed to kill process group:', error);
       return { success: false, error: error.message };
@@ -215,15 +157,16 @@ async function executePhase(config) {
   return new Promise((resolve, reject) => {
     currentPhaseProcess = spawn('bash', [scriptPath], { cwd: outputDir, stdio: ['ignore', 'pipe', 'pipe'], detached: true });
 
-    let processedFiles = 0;
-    const totalFiles = files.length * actualParallel;
+    let successCount = 0;
+    const totalJobs = files.length * actualParallel;
 
     currentPhaseProcess.stdout.on('data', (buf) => {
       const chunk = buf.toString();
+      // Simple progress tracking by counting success messages from the script
       if (chunk.includes('SUCCESS:')) {
-        processedFiles++;
-        const progress = Math.min(100, Math.round((processedFiles / totalFiles) * 100));
-        mainWindow?.webContents?.send('phase-progress', { progress, processedFiles, totalFiles });
+        successCount++;
+        const progress = Math.min(100, Math.round((successCount / totalJobs) * 100));
+        mainWindow?.webContents?.send('phase-progress', { progress, processedFiles: successCount, totalFiles: totalJobs });
       }
       mainWindow?.webContents?.send('phase-output', chunk);
     });
@@ -231,12 +174,12 @@ async function executePhase(config) {
     currentPhaseProcess.stderr.on('data', (buf) => mainWindow?.webContents?.send('phase-error', buf.toString()));
 
     currentPhaseProcess.on('close', (code) => {
-      fsp.unlink(scriptPath).catch(() => {});
+      fsp.unlink(scriptPath).catch(() => { });
       currentPhaseProcess = null;
       if (code === 0) {
-        resolve({ success: true, outputDirectory: outputDir, processedFiles: totalFiles });
+        resolve({ success: true, outputDirectory: outputDir, processedFiles: totalJobs });
       } else {
-        reject(new Error(`Process exited with code ${code}. Check the log file in the output directory for details.`));
+        reject(new Error(`Process exited with a non-zero code. Please check the log file in the output directory for details.`));
       }
     });
 
@@ -247,14 +190,11 @@ async function executePhase(config) {
   });
 }
 
-// Enhanced script generation with parallel detection
+// RESTORED ORIGINAL, ELEGANT, AND DEPENDENCY-FREE SCRIPT LOGIC
 function generatePhaseScript(cfg) {
   const { files, phaseBinaryPath, outputDir, outputPrefix, iterations, burnin, thinning, advancedArgs = [], options = {}, randomSeed, parallel = 4 } = cfg;
   const logFile = path.join(outputDir, 'phase_execution.log');
   const baseSeed = Number.isFinite(randomSeed) ? randomSeed : generateRandomSeed();
-  
-  // Get processing capabilities
-  const capabilities = getProcessingCapabilities();
 
   let script = `#!/bin/bash
 set -e
@@ -262,7 +202,6 @@ LOG_FILE="${logFile}"
 : > "$LOG_FILE"
 echo "=== EZ-PHASE Execution Log ===" >> "$LOG_FILE"
 echo "Timestamp: $(date)" >> "$LOG_FILE"
-echo "Processing mode: ${capabilities.processingMode}" >> "$LOG_FILE"
 echo "================================" >> "$LOG_FILE"
 
 job_count=0
@@ -273,18 +212,16 @@ job_count=0
   if (options.saveAll) allArgs.push('-F');
   const optionsString = allArgs.join(' ');
 
-  if (capabilities.hasParallel && parallel > 1) {
-    // Use parallel processing with original elegant approach
-    for (const file of files) {
-      const filePath = file.path || file.name;
-      const baseName = path.basename(filePath, '.inp');
-      const seedsForFile = Array.from({length: parallel}, (_, i) => baseSeed + i);
+  for (const file of files) {
+    const filePath = file.path || file.name;
+    const baseName = path.basename(filePath, '.inp');
+    const seedsForFile = Array.from({ length: parallel }, (_, i) => baseSeed + i);
 
-      for (const seed of seedsForFile) {
-        const outputFilePath = path.join(outputDir, `${outputPrefix}_${baseName}_seed${seed}.out`);
-        const command = `"${phaseBinaryPath}" -S${seed} ${optionsString} "${filePath}" "${outputFilePath}" ${iterations} ${thinning} ${burnin}`;
+    for (const seed of seedsForFile) {
+      const outputFilePath = path.join(outputDir, `${outputPrefix}_${baseName}_seed${seed}.out`);
+      const command = `"${phaseBinaryPath}" -S${seed} ${optionsString} "${filePath}" "${outputFilePath}" ${iterations} ${thinning} ${burnin}`;
 
-        script += `
+      script += `
 (
   echo "Processing: ${baseName} with seed ${seed}"
   if ${command} >> "${logFile}" 2>&1; then
@@ -298,45 +235,12 @@ if [ $((job_count % ${parallel})) -eq 0 ]; then
   wait
 fi
 `;
-      }
     }
+  }
 
-    script += `
+  script += `
 wait
 echo "All jobs completed."
 `;
-  } else {
-    // Sequential fallback when parallel not available
-    script += `
-echo "GNU Parallel not available - using sequential processing" >> "$LOG_FILE"
-`;
-
-    for (const file of files) {
-      const filePath = file.path || file.name;
-      const baseName = path.basename(filePath, '.inp');
-      const seed = baseSeed;
-      const outputFilePath = path.join(outputDir, `${outputPrefix}_${baseName}_seed${seed}.out`);
-      const command = `"${phaseBinaryPath}" -S${seed} ${optionsString} "${filePath}" "${outputFilePath}" ${iterations} ${thinning} ${burnin}`;
-
-      script += `
-echo "Processing: ${baseName} with seed ${seed} (sequential)"
-if ${command} >> "${logFile}" 2>&1; then
-  echo "SUCCESS: ${baseName} with seed ${seed}"
-  job_count=$((job_count + 1))
-else
-  echo "ERROR: ${baseName} with seed ${seed}. See log for details."
-  exit 1
-fi
-`;
-    }
-
-    script += `
-echo "Sequential processing completed. Total files: $job_count"
-`;
-  }
-  
   return script;
 }
-
-// App version
-ipcMain.handle('get-app-version', () => app.getVersion());
