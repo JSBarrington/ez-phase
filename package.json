@@ -28,7 +28,7 @@
   "build": {
     "appId": "com.jsbarrington.ez-phase",
     "productName": "EZ-PHASE",
-    "copyright": "Copyright © 2024 Jesse S. Barrington",
+    "copyright": "Copyright © 2025 Jesse S. Barrington",
     "directories": {
       "output": "dist",
       "buildResources": "resources"
