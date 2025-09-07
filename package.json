@@ -5,7 +5,6 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "dev": "electron . --inspect",
     "build-all": "electron-builder --mac --win --linux",
     "postinstall": "electron-builder install-app-deps"
   },
@@ -29,14 +28,24 @@
   "build": {
     "appId": "com.jsbarrington.ez-phase",
     "productName": "EZ-PHASE",
+    "buildResources": "resources",
     "files": [
       "**/*",
+      "!dist/",
       "!docs/",
       "!.github/",
-      "!dist/",
-      "!resources/"
+      "!.vscode/",
+      "!*.log"
     ],
-    "buildResources": "resources",
+    "extraResources": [
+      {
+        "from": "assets",
+        "to": "assets",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
     "mac": {
       "icon": "resources/icon.icns",
       "category": "public.app-category.education",
