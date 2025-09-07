@@ -28,19 +28,25 @@
   "build": {
     "appId": "com.jsbarrington.ez-phase",
     "productName": "EZ-PHASE",
+    "copyright": "Copyright © 2024 Jesse S. Barrington",
+    "directories": {
+      "output": "dist"
+    },
     "buildResources": "resources",
     "files": [
       "**/*",
-      "!dist/",
-      "!docs/",
-      "!.github/",
+      "!dist/**/*",
+      "!docs/**/*",
+      "!.github/**/*",
       "!.vscode/",
+      "!README.md",
+      "!node_modules/.cache/**/*",
       "!*.log"
     ],
     "extraResources": [
       {
-        "from": "assets",
-        "to": "assets",
+        "from": "assets/",
+        "to": "assets/",
         "filter": [
           "**/*"
         ]
@@ -73,3 +79,4 @@
     }
   }
 }
+
